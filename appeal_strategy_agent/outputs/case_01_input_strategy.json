@@ -1,0 +1,179 @@
+{
+  "case_id": "CC-2026-001",
+  "argument_chain": [
+    {
+      "claim": "The patient's ongoing skilled nursing needs are medically necessary under CMS criteria regardless of improvement plateau \u2014 the denial misapplies the improvement standard that was repudiated by the Jimmo settlement. The patient requires daily skilled insulin management, wound assessment, supervised PT, and fall prevention, all of which satisfy the 'maintenance and prevention of deterioration' standard.",
+      "claim_type": "medical_necessity",
+      "supporting_evidence": [
+        "external_evidence.citations[0]",
+        "external_evidence.citations[1]",
+        "personal_evidence.treating_physician_statement",
+        "personal_evidence.symptoms"
+      ],
+      "strength": 0.95
+    },
+    {
+      "claim": "UnitedHealthcare's denial contradicts its own 2026 Coverage Summary for SNF Services, which explicitly states that continued SNF coverage is appropriate for members with comorbid diabetes mellitus complicating post-orthopedic recovery \u2014 the exact clinical picture present here.",
+      "claim_type": "policy_violation",
+      "supporting_evidence": [
+        "external_evidence.citations[4]",
+        "personal_evidence.treating_physician_statement",
+        "personal_evidence.treatment_history"
+      ],
+      "strength": 0.92
+    },
+    {
+      "claim": "As a Medicare Advantage plan, UnitedHealthcare is federally prohibited from applying internal coverage criteria more restrictive than traditional Medicare, and must base determinations on the individual's specific circumstances. The denial's blanket 'plateau' rationale violates 42 CFR \u00a7422.101(b)(2) and CMS-4201-F, and substitutes a non-CMS standard for the individualized assessment required by law.",
+      "claim_type": "policy_violation",
+      "supporting_evidence": [
+        "external_evidence.citations[2]",
+        "external_evidence.citations[3]",
+        "external_evidence.citations[1]",
+        "denial_intake.denial_reason_text"
+      ],
+      "strength": 0.91
+    },
+    {
+      "claim": "The patient's prior history of premature home discharge following the November 2025 wrist fracture \u2014 which resulted in re-injury within 9 days and a second surgery \u2014 directly contradicts the insurer's assertion that care can be 'safely transitioned' to home health. The AAOS 6-8 week non-weight-bearing protocol and the patient's Morse fall risk score of 18/25 further establish that home-level care is clinically contraindicated at this time.",
+      "claim_type": "medical_necessity",
+      "supporting_evidence": [
+        "personal_evidence.prior_treatment_attempts",
+        "personal_evidence.treating_physician_statement",
+        "external_evidence.guidelines_found",
+        "contact_actions.additional_docs_retrieved"
+      ],
+      "strength": 0.89
+    }
+  ],
+  "contract_violations": [
+    {
+      "clause": "Jimmo v. Sebelius Settlement / CMS Transmittal 179: coverage turns on need for skilled care, not potential for improvement",
+      "source": "external_evidence.citations[1]",
+      "denial_contradicts": "Denial asserts patient has 'reached a plateau in functional improvement' as grounds for termination \u2014 this is precisely the improvement-standard rationale that Jimmo prohibits. The patient requires skilled care for maintenance and deterioration prevention regardless of improvement trajectory.",
+      "contradiction_score": 0.97
+    },
+    {
+      "clause": "CMS Final Rule CMS-4201-F (88 FR 22120): MA plans may not use internal criteria more restrictive than traditional Medicare; must individualize determinations",
+      "source": "external_evidence.citations[3]",
+      "denial_contradicts": "The denial applies a categorical 'plateau' standard and a generic transition-to-home-health recommendation without individualized assessment of this patient's non-weight-bearing status, diabetic comorbidity, fall risk, or prior re-injury history.",
+      "contradiction_score": 0.93
+    },
+    {
+      "clause": "42 CFR \u00a7422.101(b)(2): MA plan must cover all services covered by traditional Medicare Part A/B and comply with NCDs",
+      "source": "external_evidence.citations[2]",
+      "denial_contradicts": "Traditional Medicare covers SNF skilled services for maintenance and prevention under CMS Pub 100-02 Ch. 8 \u00a730.2. The denial effectively terminates coverage that traditional Medicare would continue, violating the MA coverage-parity requirement.",
+      "contradiction_score": 0.91
+    },
+    {
+      "clause": "UHC Medicare Advantage Coverage Summary \u2014 SNF Services (2026): SNF coverage appropriate for diabetic members with complicating comorbidities in post-orthopedic recovery",
+      "source": "external_evidence.citations[4]",
+      "denial_contradicts": "The denial recommends transition to home health for a patient who \u2014 per UHC's own 2026 SNF Coverage Summary \u2014 qualifies for continued SNF coverage by virtue of insulin-dependent diabetes complicating post-orthopedic recovery.",
+      "contradiction_score": 0.88
+    }
+  ],
+  "remedy_options": [
+    {
+      "remedy_type": "full_overturn",
+      "primary_argument": "The denial is directly contradicted by four independent sources of authority: the Jimmo settlement's prohibition on improvement-standard denials, CMS-4201-F's individualization requirement, the insurer's own 2026 SNF Coverage Summary, and Dr. Smith's detailed letter of medical necessity documenting active skilled nursing needs. The personal evidence is exceptionally strong (no gaps identified), the external authority is on-point, and CMS appeals database shows 14 favorable precedent reversals in similar nH Predict-related SNF terminations.",
+      "supporting_argument_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "confidence_score": 0.72,
+      "estimated_timeline_days": 60,
+      "estimated_recovery_amount": 12000,
+      "key_risks": [
+        "UHC may conduct a new algorithmic review on redetermination and issue a substantively identical denial if the underlying nH Predict tool is not challenged on procedural grounds",
+        "Reviewer may concede some but not all days, resulting in partial rather than full overturn",
+        "Request for algorithmic review documentation (42 CFR \u00a7422.568(f)) is still pending \u2014 if received before deadline, it could further strengthen the case but may not arrive in time"
+      ]
+    },
+    {
+      "remedy_type": "procedural_remand",
+      "primary_argument": "Evidence strongly suggests the denial was generated or significantly influenced by UHC's nH Predict algorithmic tool (consistent with the pattern identified in Estate of Lokken v. UnitedHealth Group and the Senate PSI 'Refusal of Recovery' report). A formal request for the algorithmic review documentation under 42 CFR \u00a7422.568(f) is already pending. If UHC's response confirms AI-driven review without adequate physician oversight, this constitutes a procedural violation requiring remand for individualized physician review \u2014 an independent ground for reversal that does not depend on the merits.",
+      "supporting_argument_indices": [
+        2,
+        3
+      ],
+      "confidence_score": 0.58,
+      "estimated_timeline_days": 90,
+      "estimated_recovery_amount": 0,
+      "key_risks": [
+        "Procedural remand recovers $0 directly \u2014 it only resets the process and orders a compliant re-review",
+        "UHC may produce documentation showing a physician did conduct an individualized review, undermining this path",
+        "Even if remand is granted, UHC could issue the same denial on the merits after proper re-review",
+        "The \u00a7422.568(f) documentation response deadline (2026-05-08) may fall after appeal submission, requiring this argument to be pleaded conditionally"
+      ]
+    },
+    {
+      "remedy_type": "external_review_escalation",
+      "primary_argument": "If the first-level internal appeal is denied, escalation to an Independent Review Organization (IRO) under the Medicare Advantage external review process is highly viable given the strength of the clinical evidence and the on-point Jimmo/CMS-4201-F violations. IRO reviewers are independent of UHC and must apply CMS standards \u2014 the same standards that clearly support coverage here. Historical IRO overturn rates for SNF terminations supported by treating physician statements run approximately 45-50%.",
+      "supporting_argument_indices": [
+        0,
+        1,
+        2
+      ],
+      "confidence_score": 0.5,
+      "estimated_timeline_days": 120,
+      "estimated_recovery_amount": 12000,
+      "key_risks": [
+        "External review escalation is only available after exhausting internal appeal levels \u2014 cannot be pursued now",
+        "Timeline extends significantly (60 days internal + ~45 days IRO = ~105-120 days total from now)",
+        "Patient is currently receiving care; ongoing coverage disruption during appeal period is a practical risk",
+        "IRO decisions are binding on the plan but not always fully implemented without further enforcement"
+      ]
+    }
+  ],
+  "agent_recommended_remedy": "full_overturn",
+  "agent_recommendation_reasoning": "Full overturn at first internal appeal is the recommended path for this case, and the evidence profile justifies a higher-than-baseline confidence (0.72 vs. the typical ~0.40 redetermination base rate) for four compounding reasons: (1) the personal evidence has no identified gaps and includes a detailed, individualized physician statement from a geriatrics specialist that directly addresses and forecloses every element of the insurer's denial rationale; (2) the denial applies the improvement-standard rationale that Jimmo expressly prohibits \u2014 this is a recognized, reversible legal error that CMS appeals reviewers are trained to identify; (3) UHC's own 2026 SNF Coverage Summary affirmatively supports coverage for this exact clinical profile, creating an internal self-contradiction that is difficult for a reviewer to ignore; and (4) the CMS appeals database has already returned 14 favorable precedent matches on similar nH Predict SNF termination patterns.\n\nCompared to procedural remand (confidence 0.58, $0 direct recovery): while the algorithmic-review procedural argument is genuine and should be pleaded as a secondary argument within the full-overturn letter, pursuing remand as the primary remedy would delay actual coverage restoration by an estimated 30+ additional days and produces no direct financial recovery \u2014 it only resets the clock. The patient is a 91-year-old in active post-surgical recovery where every additional day of SNF coverage matters clinically. Procedural remand is best deployed as a supplemental argument to pressure a favorable merits resolution, not as the standalone strategy.\n\nCompared to external review escalation (confidence 0.50, 120-day timeline): external review is not yet available (first internal appeal has not been completed) and adds 60+ days beyond the internal appeal timeline. It is the correct fallback if this level fails, and the case will remain strong at that level \u2014 but it is not the recommended primary path when a strong merits case exists at the current level.\n\nRecommended approach: File for full overturn at first internal appeal, leading with the Jimmo/maintenance-standard argument and the UHC self-contradiction, supported by Dr. Smith's letter and the prior re-injury history. Plead the algorithmic-review procedural violation as a secondary argument, noting the pending \u00a7422.568(f) request and reserving the right to supplement. If denied, escalate to external review with the same record intact.",
+  "denial_linked_to_patient_facts": {
+    "links": [
+      {
+        "denial_assertion": "Member has reached a plateau in functional improvement.",
+        "contradicting_fact": "personal_evidence.treating_physician_statement",
+        "evidence_source": "Dr. Helen Smith, MD \u2014 identifies four active skilled nursing needs (insulin management, wound assessment, supervised PT, fall prevention), none of which are plateau-dependent"
+      },
+      {
+        "denial_assertion": "Skilled services are no longer required.",
+        "contradicting_fact": "personal_evidence.symptoms",
+        "evidence_source": "Pacific Oaks SNF nursing flow sheets and PT/OT progress notes \u2014 document ongoing non-weight-bearing status, blood glucose instability (190-240 mg/dL), Morse fall score 18/25, and fatigue limiting therapy tolerance"
+      },
+      {
+        "denial_assertion": "Care can be safely transitioned to home health services.",
+        "contradicting_fact": "personal_evidence.prior_treatment_attempts",
+        "evidence_source": "November 2025 readmission discharge summary \u2014 documents that prior home discharge resulted in re-injury within 9 days and required a second surgery; Dr. Smith explicitly states home discharge is contraindicated"
+      },
+      {
+        "denial_assertion": "Continued SNF care is no longer medically necessary.",
+        "contradicting_fact": "personal_evidence.treatment_history",
+        "evidence_source": "Wound care consult note (2026-04-01) and endocrinology consult note (2026-03-25) \u2014 active specialist-documented clinical needs requiring SNF-level skilled nursing as of the denial date"
+      }
+    ]
+  },
+  "denial_linked_to_policy": {
+    "links": [
+      {
+        "denial_assertion": "Member has reached a plateau; skilled care no longer required.",
+        "contradicting_policy": "external_evidence.citations[1]",
+        "policy_source": "Jimmo v. Sebelius Settlement Agreement (2013) / CMS Transmittal 179 (2014)"
+      },
+      {
+        "denial_assertion": "Continued SNF care is no longer medically necessary; transition to home health appropriate.",
+        "contradicting_policy": "external_evidence.citations[4]",
+        "policy_source": "UnitedHealthcare Medicare Advantage Coverage Summary: Skilled Nursing Facility Services (2026 edition)"
+      },
+      {
+        "denial_assertion": "Denial based on review of submitted clinical documentation without individualized assessment.",
+        "contradicting_policy": "external_evidence.citations[3]",
+        "policy_source": "CMS Final Rule CMS-4201-F (effective January 1, 2024), 88 FR 22120"
+      },
+      {
+        "denial_assertion": "Continued SNF care is no longer medically necessary.",
+        "contradicting_policy": "external_evidence.citations[0]",
+        "policy_source": "Medicare Benefit Policy Manual, CMS Pub 100-02, Chapter 8, \u00a730.2"
+      }
+    ]
+  }
+}

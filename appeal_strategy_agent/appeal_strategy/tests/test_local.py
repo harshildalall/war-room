@@ -38,6 +38,15 @@ REQUIRED_KEYS = (
     "contact_actions",
 )
 
+OUTPUTS_DIR = Path(__file__).resolve().parent.parent.parent / "outputs"
+
+TRACE_FIELDS = (
+    "case_id",
+    "argument_chain",
+    "agent_recommended_remedy",
+    "agent_recommendation_reasoning",
+)
+
 
 def _load_case(path: Path) -> dict | None:
     if not path.exists():
@@ -103,6 +112,25 @@ def _print_summary(strategy: dict) -> None:
         print(f"reasoning: {reasoning}")
 
 
+def _save_outputs(case_path: Path, strategy: dict) -> None:
+    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    stem = case_path.stem
+    strategy_path = OUTPUTS_DIR / f"{stem}_strategy.json"
+    trace_path = OUTPUTS_DIR / f"{stem}_trace.json"
+
+    trace = {k: strategy.get(k) for k in TRACE_FIELDS if k in strategy}
+
+    strategy_path.write_text(
+        json.dumps(strategy, indent=2) + "\n", encoding="utf-8"
+    )
+    trace_path.write_text(json.dumps(trace, indent=2) + "\n", encoding="utf-8")
+
+    print(f"\n--- saved ---")
+    print(f"strategy: {strategy_path}")
+    print(f"trace:    {trace_path}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Run the strategy engine against a combined-input case file."
@@ -130,6 +158,7 @@ def main() -> int:
 
     print(json.dumps(strategy, indent=2))
     _print_summary(strategy)
+    _save_outputs(Path(args.case_file), strategy)
     return 0
 
 
