@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+anthropic
+pymupdf
+python-multipart
+python-dotenv
+pydantic
+uagents
+httpx

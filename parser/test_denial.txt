@@ -1,0 +1,1 @@
+Claim denied. Patient: John Doe. Insurer: UnitedHealthcare. Procedure: CPT 97110. Diagnosis: S82.101A. Reason: Not medically necessary. Appeal deadline: 2026-05-30.
