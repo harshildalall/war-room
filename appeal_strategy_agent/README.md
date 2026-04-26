@@ -6,8 +6,7 @@ produces a structured appeal strategy: which arguments to make, which evidence
 to gather, deadlines, and the recommended appeal level.
 
 The agent is built on the Anthropic Claude SDK (`claude-sonnet-4-6`), wrapped
-in a FastAPI HTTP service. Fetch.ai uAgent registration will be added on top
-of this in a separate step.
+in a FastAPI HTTP service.
 
 ## Setup
 
@@ -99,7 +98,42 @@ Response body:
 {
   "case_id": "abc-123",
   "status": "success",
-  "strategy": { "...": "structured strategy from the model tool call" }
+  "strategy": { "...": "structured strategy from the model tool call" },
+  "normalization_warnings": ["denial_intake.plan_id aliased to plan_id", "..."]
+}
+```
+
+`normalization_warnings` is an empty list when the upstream payload was already
+well-formed. Non-empty means the tolerant parser rewrote one or more fields
+before validation; the strings describe each change (see Architecture below).
+
+### `POST /strategy/validate`
+
+Run the tolerant parser + Pydantic validation only — no model call. Lets
+upstream-agent owners check whether their payload will be accepted and see what
+the parser rewrote, without burning an LLM token.
+
+Request body: same four-payload shape as `POST /strategy`.
+
+Response (valid):
+
+```json
+{
+  "status": "valid",
+  "normalization_warnings": [],
+  "normalized_input": { "...": "..." }
+}
+```
+
+Response (invalid):
+
+```json
+{
+  "status": "invalid",
+  "normalization_warnings": [],
+  "invalid_fields": ["denial_intake.appeal_deadline"],
+  "errors": [ { "...": "Pydantic error detail" } ],
+  "normalized_input": { "...": "..." }
 }
 ```
 
@@ -109,6 +143,12 @@ Returns `{"status": "ok"}`.
 
 ## Architecture
 
+- **Tolerant parser** — before Pydantic validation, `parse_input()` normalizes
+  upstream schema drift: `null` → empty list/string, singleton string → list,
+  stringified numbers → float, field aliases (e.g. `procedure_codes` →
+  `denied_procedure_codes`). Every rewrite is logged and returned in
+  `normalization_warnings` so it is visible which upstream agent is sending
+  loose data.
 - **Inputs** — four payloads from upstream agents: `denial_intake` (parser),
   `personal_evidence`, `external_evidence`, `contact_actions`. Each is wrapped
   in its own XML tag inside the user message so the model can address them
@@ -129,14 +169,16 @@ Returns `{"status": "ok"}`.
 ```
 appeal_strategy_agent/
 ├── appeal_strategy/
-│   ├── api.py              # FastAPI app, POST /strategy
+│   ├── api.py              # FastAPI app, POST /strategy + /strategy/validate
 │   ├── strategy_engine.py  # Claude call + caching + forced tool output
-│   └── prompts/
-│       ├── system_prompt.txt
-│       └── strategy_tool.json
-├── appeal_strategy/tests/
-│   ├── test_local.py
-│   └── test_cases/
+│   ├── prompts/
+│   │   ├── system_prompt.txt
+│   │   └── strategy_tool.json
+│   └── tests/
+│       ├── test_local.py
+│       └── test_cases/
+├── .cache/                 # MD5-keyed response cache (git-ignored)
+├── outputs/                # Generated strategy + trace JSON (git-ignored)
 ├── .env.example
 ├── .gitignore
 ├── requirements.txt
