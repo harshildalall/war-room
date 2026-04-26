@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Counterclaim — Fight Your Denial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: oklch(97% 0.008 80);
+    --bg2: oklch(93% 0.01 80);
+    --border: oklch(85% 0.012 80);
+    --text: oklch(18% 0.015 250);
+    --text2: oklch(45% 0.02 250);
+    --blue: oklch(52% 0.18 255);
+    --blue-light: oklch(92% 0.06 255);
+    --blue-mid: oklch(72% 0.12 255);
+    --green: oklch(58% 0.16 155);
+    --green-light: oklch(92% 0.06 155);
+    --amber: oklch(72% 0.18 75);
+    --amber-light: oklch(94% 0.06 75);
+    --red: oklch(58% 0.2 20);
+    --red-light: oklch(94% 0.06 20);
+    --war-bg: oklch(11% 0.025 255);
+    --war-panel: oklch(16% 0.025 255);
+    --war-border: oklch(25% 0.04 255);
+    --war-text: oklch(85% 0.02 255);
+    --war-dim: oklch(50% 0.04 255);
+  }
+  html, body, #root { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+  body { font-size: 18px; line-height: 1.5; }
+  button { cursor: pointer; font-family: inherit; }
+  input, textarea { font-family: inherit; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+  @keyframes glow { 0%,100% { box-shadow: 0 0 12px oklch(52% 0.18 255 / 0.3); } 50% { box-shadow: 0 0 28px oklch(52% 0.18 255 / 0.7); } }
+  .fade-in { animation: fadeIn 0.4s ease both; }
+  .spinner { width: 20px; height: 20px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; }
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── MOCK DATA ────────────────────────────────────────────────────────────────
+const MOCK_CASE = {
+  patient: "Gene L.",
+  insurer: "UnitedHealthcare Medicare Advantage",
+  denied: "Skilled Nursing Facility Care (SNF) — Post-Hospital",
+  amount: "$12,400",
+  denialDate: "March 28, 2026",
+  deadline: "April 27, 2026",
+  denialReason: "Not medically necessary — patient deemed stable for discharge",
+  denialCategory: "medical_necessity",
+  appealLevel: "Redetermination (Level 1)",
+};
+
+const AGENTS = [
+  {
+    id: "parser", num: 1, name: "Doc Parser",
+    tagline: "Reading your documents",
+    color: "var(--blue)", lightColor: "var(--blue-light)",
+    steps: [
+      "Scanning denial letter PDF…",
+      "Extracting CPT/HCPCS codes…",
+      "Identified: SNF care code A0427",
+      "Denial reason: medical_necessity",
+      "Appeal deadline: April 27, 2026",
+      "✓ Complete — 6 fields extracted",
+    ]
+  },
+  {
+    id: "contact", num: 2, name: "Contact",
+    tagline: "Reaching out for evidence",
+    color: "oklch(60% 0.18 290)", lightColor: "oklch(93% 0.06 290)",
+    steps: [
+      "Drafting physician outreach email…",
+      "Looking up UHC clinical policy bulletins…",
+      "Fetching CMS Local Coverage Determination…",
+      "LCD L34049: SNF coverage criteria found",
+      "UHC bulletin: CPB 0187 retrieved",
+      "✓ Complete — 3 sources gathered",
+    ]
+  },
+  {
+    id: "personal", num: "3a", name: "Personal Evidence",
+    tagline: "Finding your strongest facts",
+    color: "var(--amber)", lightColor: "var(--amber-light)",
+    steps: [
+      "Reading medical records…",
+      "Found: 3-day qualifying hospital stay",
+      "Found: physician documented daily skilled care need",
+      "Found: comorbid diabetes (complicates healing)",
+      "No prior PT documentation — flagged",
+      "✓ Complete — 4 supporting facts",
+    ]
+  },
+  {
+    id: "external", num: "3b", name: "External Evidence",
+    tagline: "Pulling federal law & precedents",
+    color: "var(--green)", lightColor: "var(--green-light)",
+    steps: [
+      "Searching Medicare Coverage Database…",
+      "Matched: NCD 100.2 (SNF coverage)",
+      "Found 3 Appeals Council decisions…",
+      "Case #M-18-1122: identical denial overturned",
+      "AHA clinical guideline retrieved",
+      "✓ Complete — 5 citations ranked",
+    ]
+  },
+  {
+    id: "policy", num: 4, name: "Policy & Confidence",
+    tagline: "Building your argument",
+    color: "var(--red)", lightColor: "var(--red-light)",
+    steps: [
+      "Cross-referencing all evidence…",
+      "Contract violation found: UHC must match Medicare",
+      "NCD says covered → MA denial is invalid",
+      "Adjusting confidence for 2 prior cases…",
+      "Confidence score: 71% reversal probability",
+      "✓ Complete — argument chain ready",
+    ]
+  },
+];
+
+const REMEDIES = [
+  {
+    id: "full",
+    label: "Full Overturn",
+    confidence: 71,
+    timeline: "60–90 days",
+    primary: "UHC's denial violates CMS NCD 100.2 and the contract clause requiring parity with traditional Medicare. The 3-day hospital stay satisfies the qualifying requirement.",
+    recommended: true,
+    tag: "Strongest argument",
+    tagColor: "var(--green)",
+    strength: "Strong",
+  },
+  {
+    id: "partial",
+    label: "Partial Coverage",
+    confidence: 84,
+    timeline: "30–45 days",
+    primary: "Request coverage for first 14 days of SNF stay only — a narrower ask, easier to grant. Can escalate to full coverage if still denied.",
+    recommended: false,
+    tag: "Fastest resolution",
+    tagColor: "var(--blue)",
+    strength: "Very strong",
+  },
+  {
+    id: "external",
+    label: "External Review (QIO)",
+    confidence: 62,
+    timeline: "72 hours",
+    primary: "Request immediate Qualified Independent Contractor review. Best if patient is still in hospital and discharge is imminent.",
+    recommended: false,
+    tag: "Emergency option",
+    tagColor: "var(--amber)",
+    strength: "Moderate",
+  },
+];
+
+const LETTER = `[Patient Name]
+[Address]
+[City, State ZIP]
+
+April 25, 2026
+
+UnitedHealthcare Medicare Advantage Appeals Department
+P.O. Box 6103
+Cypress, CA 90630-0023
+
+RE: REDETERMINATION REQUEST — Claim #UHC-2026-MAR-8847291
+Member ID: [Member ID] | Medicare Beneficiary: Gene L.
+
+Dear Appeals Review Board,
+
+I am writing to formally request a redetermination of the denial of coverage for Skilled Nursing Facility (SNF) care following my hospitalization at Cedars-Sinai Medical Center (Discharge date: March 25, 2026).
+
+I. STATEMENT OF APPEAL
+
+UnitedHealthcare Medicare Advantage denied my claim for SNF care on March 28, 2026, citing "not medically necessary — patient deemed stable for discharge." This denial is improper for the following reasons:
+
+II. LEGAL BASIS FOR COVERAGE
+
+Federal law requires UnitedHealthcare Medicare Advantage to provide coverage that is at least equivalent to Traditional Medicare. Under Medicare NCD 100.2 and 42 CFR § 409.30, SNF coverage is required when:
+
+  (1) The patient has a qualifying 3-day inpatient hospital stay ✓ (March 22–25, 2026)
+  (2) A physician orders daily skilled care ✓ (Dr. [Physician], March 25 order)
+  (3) Care is provided in a Medicare-certified SNF ✓ (Sunrise SNF, certified #CA-0044)
+
+III. PERSONAL MEDICAL EVIDENCE
+
+Per medical records dated March 24–25, 2026:
+• Treating physician Dr. [Physician] documented medical necessity for continued skilled nursing observation due to post-surgical wound management and insulin-dependent diabetes (Type 2, uncontrolled, ICD-10 E11.649).
+• Comorbid diabetes significantly complicates post-fracture healing and requires daily nursing assessment.
+• Patient does not have family support sufficient for safe home discharge.
+
+IV. CONTROLLING PRECEDENT
+
+Medicare Appeals Council Decision M-18-1122 overturned an identical SNF denial under nearly identical facts, finding that a Medicare Advantage plan may not apply a stricter "stability" standard than CMS's functional improvement test. See also: Jimmo v. Sebelius, 2013 (Medicare SNF coverage does not require improvement, only maintenance).
+
+V. CONTRACT VIOLATION
+
+UHC's denial applies a "stability" standard not permitted under CMS guidelines. Medicare Advantage plans are prohibited from imposing coverage limitations more restrictive than Traditional Medicare (42 CFR § 422.101(b)(1)).
+
+VI. REQUESTED REMEDY
+
+I request full reversal of this denial and approval of SNF coverage for the medically necessary duration, retroactive to March 25, 2026. I am prepared to escalate to Qualified Independent Contractor review if this redetermination is denied.
+
+Respectfully submitted,
+
+[Patient Signature]
+[Patient Name]
+[Phone] | [Email]
+
+ENCLOSURES:
+  □ Hospital discharge summary (3 pages)
+  □ Physician letter of medical necessity
+  □ SNF admission records
+  □ Medicare card (copy)
+  □ CMS Form CMS-20027 (Redetermination Request)`;
+
+// ── LIVE BACKEND HELPERS ────────────────────────────────────────────────────
+async function apiJson(path, options = {}) {
+  const response = await fetch(path, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+  if (!response.ok) {
+    let detail = `${response.status} ${response.statusText}`;
+    try {
+      const body = await response.json();
+      detail = body.detail || detail;
+    } catch (_) {}
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+function getLiveLetter(caseResult) {
+  return caseResult?.drafted_letter?.appeal_letter || caseResult?.appeal_packet?.appeal_letter || LETTER;
+}
+
+function getLiveCitations(caseResult) {
+  return caseResult?.drafted_letter?.citations_footnoted || caseResult?.appeal_packet?.citations_footnoted || null;
+}
+
+function getLiveDeadline(caseResult) {
+  return caseResult?.drafted_letter?.deadline || caseResult?.appeal_packet?.deadline || MOCK_CASE.deadline;
+}
+
+function getLiveRemedy(caseResult) {
+  const strategy = caseResult?.appeal_strategy;
+  return strategy?.agent_recommended_remedy || 'full_overturn';
+}
+
+function getLiveVerification(caseResult) {
+  return caseResult?.pipeline_result?.verification_status || caseResult?.verification_report?.status || 'demo';
+}
+
+// ── COMPONENTS ───────────────────────────────────────────────────────────────
+
+function Logo({ dark }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', cursor: 'default' }}>
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="8" fill={dark ? "var(--blue)" : "var(--text)"}/>
+        <path d="M8 16 L14 10 L24 20 M18 14 L24 10" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span style={{ fontWeight: 700, fontSize: 20, color: dark ? 'white' : 'var(--text)', letterSpacing: -0.5 }}>Counterclaim</span>
+    </div>
+  );
+}
+
+function Btn({ onClick, children, variant='primary', size='md', style: s={}, disabled=false }) {
+  const base = {
+    display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 600,
+    border: 'none', borderRadius: 12, cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'all 0.15s', fontFamily: 'inherit', opacity: disabled ? 0.5 : 1,
+  };
+  const sizes = { sm: { padding: '10px 18px', fontSize: 15 }, md: { padding: '14px 28px', fontSize: 17 }, lg: { padding: '18px 36px', fontSize: 20 } };
+  const variants = {
+    primary: { background: 'var(--text)', color: 'white' },
+    blue: { background: 'var(--blue)', color: 'white' },
+    ghost: { background: 'transparent', color: 'var(--text)', border: '2px solid var(--border)' },
+    danger: { background: 'var(--red)', color: 'white' },
+  };
+  return <button onClick={disabled ? undefined : onClick} style={{ ...base, ...sizes[size], ...variants[variant], ...s }}>{children}</button>;
+}
+
+function Tag({ label, color }) {
+  return <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: color + '22', color, letterSpacing: 0.5, textTransform: 'uppercase' }}>{label}</span>;
+}
+
+// ── TWEAK DEFAULTS ────────────────────────────────────────────────────────────
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "brandVoice": "fight"
+}/*EDITMODE-END*/;
+
+// ── DENIAL HERO VISUAL ────────────────────────────────────────────────────────
+function DenialHero() {
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 480, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px' }}>
+      <div style={{ position: 'absolute', width: 320, height: 420, background: 'oklch(86% 0.01 80)', borderRadius: 3, transform: 'rotate(-6deg) translate(20px, 12px)' }}></div>
+      <div style={{ position: 'absolute', width: 320, height: 420, background: 'oklch(91% 0.01 80)', borderRadius: 3, transform: 'rotate(-2deg) translate(8px, 5px)' }}></div>
+      <div style={{
+        position: 'relative', width: 320,
+        background: 'white', borderRadius: 3,
+        boxShadow: '0 16px 64px rgba(0,0,0,0.18)',
+        fontFamily: 'Georgia, serif', fontSize: 11, color: '#222', lineHeight: 1.65,
+        padding: '28px 26px 22px', transform: 'rotate(1.5deg)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, paddingBottom: 12, borderBottom: '2px solid #111' }}>
+          <div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 800, fontSize: 12, letterSpacing: -0.2 }}>UnitedHealthcare</div>
+            <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, color: '#666', letterSpacing: 0.5, textTransform: 'uppercase' }}>Medicare Advantage</div>
+          </div>
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: '#999', textAlign: 'right', lineHeight: 1.6 }}>
+            <div>March 28, 2026</div>
+            <div>#UHC-2026-8847291</div>
+          </div>
+        </div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9.5, marginBottom: 12, color: '#555' }}>
+          RE: <strong style={{ color: '#111' }}>Notice of Adverse Benefit Determination</strong><br/>
+          Member: Gene L. · ID ●●●●4421
+        </div>
+        <div style={{ fontSize: 10.5, lineHeight: 1.8, color: '#333', marginBottom: 14 }}>
+          Dear Member,<br/><br/>
+          Your request for <strong>Skilled Nursing Facility care</strong> following hospitalization at Cedars-Sinai has been <strong>denied</strong>.<br/><br/>
+          Reason: <strong>Not medically necessary.</strong> Patient deemed stable for home discharge per clinical criteria.<br/><br/>
+          Amount denied: <strong>$12,400.00</strong>
+        </div>
+        <div style={{
+          position: 'absolute', top: 76, right: 18,
+          border: '2.5px solid oklch(50% 0.22 18)', borderRadius: 3,
+          padding: '4px 10px', transform: 'rotate(14deg)',
+          color: 'oklch(50% 0.22 18)', fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 900, fontSize: 18, letterSpacing: 4, opacity: 0.88,
+        }}>DENIED</div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 9, color: '#ccc', borderTop: '1px solid #eee', paddingTop: 8, lineHeight: 1.6 }}>
+          You have 60 days to appeal. This determination was made automatically.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 1: LANDING ────────────────────────────────────────────────────────
+function Landing({ onNext, onSignIn }) {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [worldIDOpen, setWorldIDOpen] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [authDone, setAuthDone] = useState(false);
+
+
+  const headlines = {
+    fight: <><em>Their</em> AI denied you<br/>in 1.2 seconds.<br/>Ours fights back.</>,
+    help:  <>Got a Medicare<br/>denial letter?<br/>We'll handle it.</>,
+    legal: <>90% of Medicare denials<br/>get reversed.<br/>Almost no one appeals.</>,
+  };
+  const sublines = {
+    fight: 'Upload your denial letter. Five AI agents build a citation-backed appeal in 45 seconds — free.',
+    help:  'Counterclaim reads your denial, finds federal evidence, and writes your full appeal automatically.',
+    legal: 'The appeal process takes 40 hours manually. We do it in 45 seconds.',
+  };
+
+  const signInMode = React.useRef(false);
+  function openSignIn() { signInMode.current = true; setWorldIDOpen(true); }
+  function openAppeal() { signInMode.current = false; setWorldIDOpen(true); }
+  function handleScan() {
+    setVerifying(true);
+    setTimeout(() => { setVerifying(false); setAuthDone(true); }, 2200);
+    setTimeout(() => { setWorldIDOpen(false); signInMode.current ? onSignIn() : onNext(); }, 3400);
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>
+      <TweaksPanel title="Tweaks">
+        <TweakSection label="Brand Voice" />
+        <TweakRadio label="Tone" value={tweaks.brandVoice}
+          options={[{label:'Fight', value:'fight'},{label:'Help', value:'help'},{label:'Legal', value:'legal'}]}
+          onChange={v => setTweak('brandVoice', v)} />
+      </TweaksPanel>
+
+      {/* Nav */}
+      <nav style={{ padding: '18px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Logo />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button onClick={openSignIn} style={{ background: 'none', border: 'none', fontSize: 14, color: 'var(--text2)', cursor: 'pointer', padding: '8px 14px', borderRadius: 8 }}>Sign in</button>
+          <Btn onClick={openAppeal} variant="blue" size="sm">Start my appeal</Btn>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '5fr 6fr', minHeight: 'calc(100vh - 120px)' }}>
+        {/* Left: text */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 40px 40px 48px' }}>
+          <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 'clamp(40px, 4vw, 60px)', lineHeight: 1.05, letterSpacing: -0.5, marginBottom: 20 }}>
+            {headlines[tweaks.brandVoice]}
+          </h1>
+          <p style={{ fontSize: 16, color: 'var(--text2)', lineHeight: 1.65, marginBottom: 32, maxWidth: 340 }}>
+            {sublines[tweaks.brandVoice]}
+          </p>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 48 }}>
+            <Btn onClick={openAppeal} variant="blue" size="md">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 1 0 20M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>
+              Start my appeal
+            </Btn>
+            <button style={{ background: 'none', border: 'none', fontSize: 15, color: 'var(--text2)', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>How it works</button>
+          </div>
+          <p style={{ fontSize: 12, color: 'oklch(70% 0.01 250)' }}>Verified with World ID · No personal data stored · Medicare only</p>
+        </div>
+
+        {/* Right: letter, edge to edge */}
+        <div style={{ background: 'oklch(93% 0.012 75)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <DenialHero />
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{ borderTop: '1px solid var(--border)', padding: '14px 48px', display: 'flex', gap: 40, alignItems: 'center', flexWrap: 'wrap', background: 'white' }}>
+        {[['2.3M','Medicare claims denied by UHC last year'],['90%','reversed when appealed'],['0.2%','of patients ever appeal'],['45s','to build yours']].map(([n,l]) => (
+          <div key={n} style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontFamily: 'DM Serif Display', fontSize: 22, color: 'var(--text)' }}>{n}</span>
+            <span style={{ fontSize: 13, color: 'var(--text2)' }}>{l}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* World ID Modal */}
+      {worldIDOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setWorldIDOpen(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 24, padding: 48, maxWidth: 400, width: '90%', textAlign: 'center', animation: 'fadeIn 0.2s both' }}>
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 1 0 20M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>
+            </div>
+            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Verify with World ID</h2>
+            <p style={{ color: 'var(--text2)', marginBottom: 32, fontSize: 16, lineHeight: 1.6 }}>We confirm you're a real person — without storing any personal information.</p>
+            {!verifying && !authDone && (
+              <div style={{ padding: '28px', border: '2px dashed var(--border)', borderRadius: 16, marginBottom: 24, cursor: 'pointer', background: 'var(--bg)' }} onClick={handleScan}>
+                <div style={{ fontSize: 64, marginBottom: 8 }}>📱</div>
+                <p style={{ fontWeight: 600, fontSize: 16 }}>Tap to scan QR code</p>
+                <p style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>(Demo: tap to simulate scan)</p>
+              </div>
+            )}
+            {verifying && (
+              <div style={{ padding: 32 }}>
+                <div className="spinner" style={{ width: 40, height: 40, borderWidth: 3, margin: '0 auto 16px' }}></div>
+                <p style={{ fontWeight: 600 }}>Verifying…</p>
+              </div>
+            )}
+            {authDone && (
+              <div style={{ padding: 24, background: 'var(--green-light)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
+                <span style={{ fontSize: 28 }}>✓</span>
+                <div><p style={{ fontWeight: 700, color: 'var(--green)' }}>Verified!</p><p style={{ fontSize: 14, color: 'var(--text2)' }}>Launching…</p></div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SCREEN 2: UPLOAD ─────────────────────────────────────────────────────────
+function Upload({ onNext }) {
+  const [files, setFiles] = useState({ denial: null, contract: null, records: null });
+  const [story, setStory] = useState('');
+  const [dragging, setDragging] = useState(null);
+  const [step, setStep] = useState(0); // 0=denial, 1=records, 2=story
+
+  function mockUpload(field) {
+    const names = { denial: 'UHC_Denial_Letter_Mar2026.pdf', contract: 'Medicare_Advantage_Plan_2026.pdf', records: 'Medical_Records_Cedars.pdf' };
+    setFiles(f => ({ ...f, [field]: names[field] }));
+  }
+
+  const canProceed = files.denial;
+
+  const steps = [
+    {
+      key: 'denial',
+      title: 'Upload your denial letter',
+      subtitle: 'This is the letter from your insurance company saying your claim was denied. It may be on paper or in your email.',
+      required: true,
+      icon: '📄',
+    },
+    {
+      key: 'records',
+      title: 'Add your medical records',
+      subtitle: 'Optional but helps a lot. Include discharge summaries, doctor notes, or anything related to the denied treatment.',
+      required: false,
+      icon: '🏥',
+    },
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <nav style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+        <Logo />
+        <div style={{ display: 'flex', align: 'center', gap: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="2.5"><polyline points="2,8 6,12 14,4"/></svg>
+          </div>
+          <span style={{ fontSize: 15, color: 'var(--text2)' }}>Verified · Gene L.</span>
+        </div>
+      </nav>
+
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 40, alignItems: 'center' }}>
+          {['Upload docs', 'Review case', 'Strategy', 'Your letter'].map((s, i) => (
+            <React.Fragment key={s}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 26, height: 26, borderRadius: '50%', background: i === 0 ? 'var(--blue)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: i === 0 ? 'white' : 'var(--text2)' }}>{i+1}</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: i===0 ? 600 : 400, color: i===0 ? 'var(--text)' : 'var(--text2)' }}>{s}</span>
+              </div>
+              {i < 3 && <div style={{ flex: 1, height: 1, background: 'var(--border)' }}/>}
+            </React.Fragment>
+          ))}
+        </div>
+
+        <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 40, marginBottom: 10 }}>Let's see what we're fighting</h1>
+        <p style={{ fontSize: 17, color: 'var(--text2)', marginBottom: 48, lineHeight: 1.6 }}>Upload your denial letter and we'll take it from there. Everything is encrypted and never sold.</p>
+
+        {steps.map(s => (
+          <div key={s.key} style={{ marginBottom: 24, padding: '28px', background: 'white', border: `2px solid ${files[s.key] ? 'var(--green)' : 'var(--border)'}`, borderRadius: 20, transition: 'border-color 0.2s' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+              <span style={{ fontSize: 32 }}>{s.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                  <h3 style={{ fontSize: 19, fontWeight: 700 }}>{s.title}</h3>
+                  {s.required && <Tag label="Required" color="var(--red)" />}
+                  {!s.required && <Tag label="Optional" color="var(--text2)" />}
+                </div>
+                <p style={{ color: 'var(--text2)', fontSize: 15, lineHeight: 1.6, marginBottom: 20 }}>{s.subtitle}</p>
+                {files[s.key] ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--green-light)', borderRadius: 12 }}>
+                    <span>✅</span>
+                    <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--green)' }}>{files[s.key]}</span>
+                    <button onClick={() => setFiles(f => ({ ...f, [s.key]: null }))} style={{ marginLeft: 'auto', border: 'none', background: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 20 }}>×</button>
+                  </div>
+                ) : (
+                  <div onClick={() => mockUpload(s.key)}
+                    style={{ padding: '28px', border: '2px dashed var(--border)', borderRadius: 14, textAlign: 'center', cursor: 'pointer', background: 'var(--bg)', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--blue)'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                  >
+                    <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Tap to upload or take a photo</p>
+                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>PDF, JPG, or PNG · (Demo: tap to add sample file)</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Story */}
+        <div style={{ marginBottom: 36, padding: '28px', background: 'white', border: '2px solid var(--border)', borderRadius: 20 }}>
+          <h3 style={{ fontSize: 19, fontWeight: 700, marginBottom: 6 }}>📝 Tell us what happened <Tag label="Optional" color="var(--text2)" /></h3>
+          <p style={{ color: 'var(--text2)', fontSize: 15, marginBottom: 16 }}>In your own words — what treatment was denied? How has it affected you?</p>
+          <textarea
+            value={story}
+            onChange={e => setStory(e.target.value)}
+            placeholder="Example: I was in the hospital for 3 days after my hip surgery. They sent me home and my insurance refused to pay for rehab. My doctor said I needed it…"
+            rows={5}
+            style={{ width: '100%', padding: '16px', fontSize: 16, border: '1.5px solid var(--border)', borderRadius: 12, resize: 'vertical', outline: 'none', lineHeight: 1.6, color: 'var(--text)', background: 'var(--bg)' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 15, color: 'var(--text2)' }}>{canProceed ? '✓ Ready to analyze' : 'Upload denial letter to continue'}</span>
+          <Btn onClick={onNext} variant="blue" size="lg" disabled={!canProceed} style={{ opacity: canProceed ? 1 : 0.4 }}>
+            Analyze My Case →
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 3: WAR ROOM ───────────────────────────────────────────────────────
+function WarRoom({ onNext, backendRunning, backendStatus }) {
+  const [agentPhase, setAgentPhase] = useState(0); // which agent is active
+  const [agentLines, setAgentLines] = useState(Array(5).fill(0)); // lines shown per agent
+  const [agentDone, setAgentDone] = useState(Array(5).fill(false));
+  const [evidenceCount, setEvidenceCount] = useState(0);
+  const [factsCount, setFactsCount] = useState(0);
+  const [doneCount, setDoneCount] = useState(0);
+  const [showNext, setShowNext] = useState(false);
+  const [citFeed, setCitFeed] = useState([]);
+  const [elapsed, setElapsed] = useState(0);
+
+  const CITS = [
+    { src: "CMS NCD 100.2", text: "SNF coverage requires qualifying 3-day hospital stay", type: "federal_policy" },
+    { src: "LCD L34049 (Noridian)", text: "Daily skilled nursing care is medically necessary post-surgery with comorbidities", type: "local_coverage" },
+    { src: "Appeals Council M-18-1122", text: "MA plan may not apply stricter standard than Traditional Medicare", type: "precedent" },
+    { src: "Jimmo v. Sebelius (2013)", text: "Coverage doesn't require improvement — maintenance suffices", type: "case_law" },
+    { src: "UHC CPB 0187", text: "Plan requires NCD criteria met — criteria ARE met per records", type: "insurer_bulletin" },
+  ];
+
+  useEffect(() => {
+    let t = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const schedule = [];
+    let time = 600;
+    AGENTS.forEach((agent, ai) => {
+      // Start agent
+      schedule.push([time, () => setAgentPhase(ai)]);
+      // Add lines
+      agent.steps.forEach((_, li) => {
+        time += 380 + li * 80;
+        schedule.push([time, () => setAgentLines(prev => { const n=[...prev]; n[ai]=li+1; return n; })]);
+      });
+      // Mark done
+      time += 300;
+      schedule.push([time, () => {
+        setAgentDone(prev => { const n=[...prev]; n[ai]=true; return n; });
+        setDoneCount(c => c + 1);
+        const factBumps = [0, 0, 4, 0, 0];
+        const evidBumps = [0, 3, 0, 5, 0];
+        setFactsCount(c => c + factBumps[ai]);
+        setEvidenceCount(c => c + evidBumps[ai]);
+      }]);
+      // Add citations for agents 3b and 4
+      if (ai === 3) {
+        CITS.slice(0,3).forEach((c, ci) => {
+          time += 200;
+          schedule.push([time + ci*300, () => setCitFeed(f => [...f, c])]);
+        });
+      }
+      if (ai === 4) {
+        CITS.slice(3).forEach((c, ci) => {
+          time += 200;
+          schedule.push([time + ci*300, () => setCitFeed(f => [...f, c])]);
+        });
+      }
+      time += 500;
+    });
+    // All done
+    schedule.push([time + 500, () => setShowNext(true)]);
+
+    const timers = schedule.map(([delay, fn]) => setTimeout(fn, delay));
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const citColors = { federal_policy: 'var(--blue)', local_coverage: 'oklch(60% 0.18 290)', precedent: 'var(--amber)', case_law: 'var(--red)', insurer_bulletin: 'var(--green)' };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--war-bg)', color: 'var(--war-text)', fontFamily: "'DM Sans', sans-serif", display: 'flex', flexDirection: 'column' }}>
+      {/* Top bar */}
+      <div style={{ padding: '16px 32px', borderBottom: '1px solid var(--war-border)', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+        <Logo dark />
+        <div style={{ flex: 1 }}></div>
+        <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--war-dim)', marginBottom: 2 }}>Case</div>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{MOCK_CASE.denied.substring(0, 28)}…</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--war-dim)', marginBottom: 2 }}>Deadline</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--amber)' }}>{MOCK_CASE.deadline}</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--war-dim)', marginBottom: 2 }}>Elapsed</div>
+            <div style={{ fontSize: 14, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>{String(Math.floor(elapsed/60)).padStart(2,'0')}:{String(elapsed%60).padStart(2,'0')}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress header */}
+      <div style={{ padding: '20px 32px', display: 'flex', alignItems: 'center', gap: 32, borderBottom: '1px solid var(--war-border)', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--war-dim)', marginBottom: 10 }}>Analysis progress</div>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {AGENTS.map((agent, ai) => (
+              <div key={agent.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <div style={{ height: 6, borderRadius: 3, background: agentDone[ai] ? agent.color : agentPhase === ai ? 'oklch(35% 0.04 255)' : 'var(--war-panel)', transition: 'background 0.5s', overflow: 'hidden', position: 'relative' }}>
+                  {agentPhase === ai && !agentDone[ai] && (
+                    <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, transparent, ${agent.color}55, transparent)`, backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }}></div>
+                  )}
+                </div>
+                <div style={{ fontSize: 9, color: agentDone[ai] ? agent.color : agentPhase === ai ? 'var(--war-text)' : 'var(--war-dim)', fontWeight: agentPhase === ai || agentDone[ai] ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 28 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 36, color: 'var(--green)', lineHeight: 1 }}>{evidenceCount}</div>
+            <div style={{ fontSize: 11, color: 'var(--war-dim)', marginTop: 3 }}>citations found</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 36, color: 'var(--amber)', lineHeight: 1 }}>{factsCount}</div>
+            <div style={{ fontSize: 11, color: 'var(--war-dim)', marginTop: 3 }}>facts extracted</div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: 'DM Serif Display', fontSize: 36, color: 'var(--blue)', lineHeight: 1 }}>{doneCount}/5</div>
+            <div style={{ fontSize: 11, color: 'var(--war-dim)', marginTop: 3 }}>agents done</div>
+          </div>
+        </div>
+        {showNext && (
+          <Btn onClick={backendRunning ? undefined : onNext} variant="blue" size="md" disabled={backendRunning} style={{ animation: 'fadeIn 0.5s both' }}>
+            {backendRunning ? 'Generating real appeal…' : 'Choose My Strategy →'}
+          </Btn>
+        )}
+      </div>
+      {backendStatus && (
+        <div style={{ padding: '10px 32px', borderBottom: '1px solid var(--war-border)', color: backendStatus.type === 'error' ? 'var(--red)' : 'var(--war-dim)', fontSize: 13 }}>
+          {backendStatus.message}
+        </div>
+      )}
+
+      {/* Main grid */}
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 280px', gap: 0, overflow: 'hidden' }}>
+        {/* 5 agent panels */}
+        {AGENTS.map((agent, ai) => {
+          const isActive = agentPhase === ai && !agentDone[ai];
+          const isDone = agentDone[ai];
+          const isWaiting = agentPhase < ai;
+          return (
+            <div key={agent.id} style={{
+              borderRight: '1px solid var(--war-border)',
+              padding: '20px 18px',
+              display: 'flex', flexDirection: 'column',
+              opacity: isWaiting ? 0.4 : 1,
+              transition: 'opacity 0.4s',
+              background: isActive ? 'oklch(14% 0.03 255)' : 'transparent',
+            }}>
+              {/* Agent header */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: isDone ? 'var(--green)' : isActive ? agent.color : 'var(--war-dim)', animation: isActive ? 'pulse 1s infinite' : 'none' }}></div>
+                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: 'var(--war-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{elapsed < 2 && !isDone && !isActive ? 'waiting' : isDone ? 'done' : isActive ? 'working' : 'queued'}</span>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: isDone ? agent.color : isActive ? 'white' : 'var(--war-dim)', marginBottom: 2 }}>{agent.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--war-dim)', lineHeight: 1.4 }}>{agent.tagline}</div>
+              </div>
+
+              {/* Status */}
+              <div style={{ flex: 1, fontFamily: "'JetBrains Mono', monospace", fontSize: 11, lineHeight: 1.8 }}>
+                {agent.steps.slice(0, agentLines[ai]).map((line, li) => (
+                  <div key={li} style={{ color: li === agentLines[ai]-1 && !isDone ? 'white' : 'var(--war-dim)', animation: 'slideIn 0.3s both', display: 'flex', gap: 6 }}>
+                    <span style={{ color: isDone && li === agent.steps.length-1 ? 'var(--green)' : 'var(--war-dim)' }}>›</span>
+                    <span style={{ wordBreak: 'break-word' }}>{line}</span>
+                  </div>
+                ))}
+                {isActive && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: agent.color, marginTop: 4 }}>
+                    <div className="spinner" style={{ borderColor: agent.color, borderTopColor: 'transparent' }}></div>
+                    <span>working…</span>
+                  </div>
+                )}
+                {isDone && (
+                  <div style={{ marginTop: 8, padding: '8px 12px', background: 'oklch(20% 0.04 155)', borderRadius: 8, fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>DONE</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Citation feed */}
+        <div style={{ padding: '20px 18px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: 'var(--war-dim)', marginBottom: 16 }}>Evidence Feed</div>
+          <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {citFeed.length === 0 && (
+              <div style={{ color: 'var(--war-dim)', fontSize: 12, fontStyle: 'italic' }}>Waiting for agents…</div>
+            )}
+            {citFeed.map((c, i) => (
+              <div key={i} style={{ padding: '12px', background: 'var(--war-panel)', borderRadius: 10, borderLeft: `3px solid ${citColors[c.type] || 'var(--blue)'}`, animation: 'slideIn 0.4s both' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: citColors[c.type] || 'var(--blue)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>{c.type.replace(/_/g,' ')}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'white', marginBottom: 4 }}>{c.src}</div>
+                <div style={{ fontSize: 11, color: 'var(--war-dim)', lineHeight: 1.5 }}>{c.text}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 4: REMEDY ─────────────────────────────────────────────────────────
+function Remedy({ onNext }) {
+  const [selected, setSelected] = useState(null);
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <nav style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', background: 'white' }}>
+        <Logo />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {['Upload docs', 'War room', 'Strategy', 'Your letter'].map((s, i) => (
+            <React.Fragment key={s}>
+              <span style={{ fontSize: 13, fontWeight: i===2 ? 700 : 400, color: i <= 2 ? 'var(--text)' : 'var(--text2)', padding: '4px 10px', borderRadius: 20, background: i===2 ? 'var(--blue-light)' : 'transparent', color: i===2 ? 'var(--blue)' : i < 2 ? 'var(--green)' : 'var(--text2)' }}>{i < 2 ? '✓ ' : ''}{s}</span>
+              {i < 3 && <span style={{ color: 'var(--border)' }}>›</span>}
+            </React.Fragment>
+          ))}
+        </div>
+      </nav>
+
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
+        <div style={{ marginBottom: 12 }}>
+          <Tag label="Step 3 of 4" color="var(--blue)" />
+        </div>
+        <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 44, marginBottom: 10 }}>What outcome do you want?</h1>
+        <p style={{ fontSize: 17, color: 'var(--text2)', marginBottom: 48, lineHeight: 1.6, maxWidth: 560 }}>We've built 3 strategies, each with different tradeoffs. The recommended option has the best chance of winning full coverage.</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 48 }}>
+          {REMEDIES.map(r => (
+            <div key={r.id} onClick={() => setSelected(r.id)} style={{
+              padding: '28px 32px', background: 'white', borderRadius: 20,
+              border: `2px solid ${selected === r.id ? 'var(--blue)' : r.recommended ? 'var(--green)' : 'var(--border)'}`,
+              cursor: 'pointer', transition: 'all 0.2s',
+              boxShadow: selected === r.id ? '0 0 0 4px var(--blue-light)' : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
+                <div style={{ flexShrink: 0 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${selected === r.id ? 'var(--blue)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                    {selected === r.id && <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--blue)' }}></div>}
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: 21, fontWeight: 700 }}>{r.label}</h3>
+                    <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: r.tagColor + '20', color: r.tagColor, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>{r.tag}</span>
+                  </div>
+                  <p style={{ color: 'var(--text2)', lineHeight: 1.6, marginBottom: 16, fontSize: 16 }}>{r.primary}</p>
+                  <div style={{ display: 'flex', gap: 24 }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 2 }}>Argument strength</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 80, height: 6, background: 'var(--bg2)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ width: `${r.confidence}%`, height: '100%', background: r.tagColor, borderRadius: 3 }}></div>
+                        </div>
+                        <span style={{ fontWeight: 700, fontSize: 17, color: r.tagColor }}>{r.strength}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 2 }}>Expected timeline</div>
+                      <div style={{ fontWeight: 700, fontSize: 17 }}>{r.timeline}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Btn onClick={selected ? onNext : undefined} variant="blue" size="lg" disabled={!selected}>
+            Build My Appeal Letter →
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 5: LETTER ─────────────────────────────────────────────────────────
+function Letter({ onHistory, onProfile, caseResult }) {
+  const [printing, setPrinting] = useState(false);
+  const [sent, setSent] = useState(false);
+  const liveLetter = getLiveLetter(caseResult);
+  const liveCitations = getLiveCitations(caseResult);
+  const liveDeadline = getLiveDeadline(caseResult);
+  const liveVerification = getLiveVerification(caseResult);
+  const liveRemedy = getLiveRemedy(caseResult);
+  const citationCount = liveCitations ? liveCitations.length : 5;
+
+  const steps = [
+    { icon: '✉️', title: 'Mail to UHC', detail: 'UnitedHealthcare Medicare Advantage Appeals\nP.O. Box 6103, Cypress, CA 90630', action: 'Certified Mail (USPS)' },
+    { icon: '📋', title: 'Include CMS Form', detail: 'Form CMS-20027 (Redetermination Request)\nAlready attached to your PDF', action: 'Attached below' },
+    { icon: '📅', title: 'File before deadline', detail: `${liveDeadline} — verify before submitting`, action: 'File today', urgent: true },
+  ];
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
+      <nav style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', background: 'white' }}>
+        <Logo />
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Btn onClick={onProfile} variant="ghost" size="sm">My Profile</Btn>
+          <Btn onClick={onHistory} variant="ghost" size="sm">My Cases</Btn>
+          <Btn onClick={() => setSent(true)} variant="blue" size="sm">
+            {sent ? '✓ Saved to my account' : '💾 Save to my account'}
+          </Btn>
+        </div>
+      </nav>
+
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
+        {/* Success banner */}
+        <div style={{ padding: '24px 28px', background: 'var(--green-light)', border: '2px solid var(--green)', borderRadius: 20, marginBottom: 40, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <span style={{ fontSize: 40 }}>🎉</span>
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)', marginBottom: 4 }}>Your appeal letter is ready!</h2>
+            <p style={{ color: 'oklch(35% 0.1 155)', fontSize: 15 }}>The backend agents generated this appeal packet with {citationCount} citation{citationCount === 1 ? '' : 's'}. Recommended remedy: {liveRemedy}. Verification status: {liveVerification}.</p>
+          </div>
+        </div>
+
+        {/* Submission steps */}
+        <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 20 }}>How to submit</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 48 }}>
+          {steps.map((s, i) => (
+            <div key={i} style={{ padding: '24px', background: 'white', borderRadius: 16, border: `1.5px solid ${s.urgent ? 'var(--amber)' : 'var(--border)'}` }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>{s.icon}</div>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{s.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 10, whiteSpace: 'pre-line', lineHeight: 1.5 }}>{s.detail}</div>
+              <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, background: s.urgent ? 'var(--amber-light)' : 'var(--blue-light)', color: s.urgent ? 'var(--amber)' : 'var(--blue)', fontWeight: 600 }}>{s.action}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Letter preview */}
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <h2 style={{ fontSize: 26, fontWeight: 700 }}>Your appeal letter</h2>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Btn onClick={() => navigator.clipboard?.writeText(liveLetter)} variant="ghost" size="sm">📋 Copy</Btn>
+            <Btn onClick={() => window.open('/api/latest/letter.txt', '_blank')} variant="blue" size="sm">⬇ Download TXT</Btn>
+          </div>
+        </div>
+        <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid var(--border)', padding: '48px 52px', fontFamily: 'Georgia, serif', fontSize: 15, lineHeight: 1.9, whiteSpace: 'pre-wrap', color: '#1a1a2e', maxHeight: 480, overflow: 'auto', boxShadow: '0 4px 40px rgba(0,0,0,0.06)' }}>
+          {liveLetter}
+        </div>
+
+        {/* Citations used */}
+        <div style={{ marginTop: 32, padding: '24px 28px', background: 'white', borderRadius: 16, border: '1.5px solid var(--border)' }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>📚 Citations used in this appeal</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(liveCitations || [
+              { label: 'NCD 100.2', desc: 'Medicare National Coverage Determination for SNF care', type: 'Federal Policy' },
+              { label: 'LCD L34049', desc: 'Local Coverage Determination — daily skilled nursing', type: 'Local Coverage' },
+              { label: 'Appeals Council M-18-1122', desc: 'MA plan cannot apply stricter standard than Traditional Medicare', type: 'Precedent' },
+              { label: 'Jimmo v. Sebelius (2013)', desc: 'Maintenance standard — no improvement required for coverage', type: 'Case Law' },
+              { label: 'UHC CPB 0187', desc: "UHC's own clinical policy bulletin — criteria met per records", type: "Insurer's Own Policy" },
+            ]).map((c, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 12, background: 'var(--blue-light)', color: 'var(--blue)', whiteSpace: 'nowrap' }}>{c.type || `Citation ${c.footnote_index || i + 1}`}</span>
+                <div>
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>{c.label || c.source}</span>
+                  <span style={{ color: 'var(--text2)', fontSize: 13 }}> — {c.desc || c.quote}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 6: HISTORY ────────────────────────────────────────────────────────
+function History({ onNew, onProfile }) {
+  const cases = [
+    { date: 'Apr 25, 2026', denied: 'SNF Care — Post-Hospital', insurer: 'UHC Medicare Advantage', amount: '$12,400', status: 'Filed', confidence: 71, days: 0 },
+    { date: 'Jan 12, 2026', denied: 'MRI — Lumbar Spine', insurer: 'Humana Gold Plus', amount: '$2,800', status: 'Won', confidence: 82, days: 34 },
+    { date: 'Oct 3, 2025', denied: 'Physical Therapy (12 sessions)', insurer: 'Aetna Medicare', amount: '$1,400', status: 'Won', confidence: 68, days: 28 },
+  ];
+  const statusColors = { Filed: 'var(--blue)', Won: 'var(--green)', Lost: 'var(--red)', Pending: 'var(--amber)' };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <nav style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+        <Logo />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn onClick={onProfile} variant="ghost" size="sm">My Profile</Btn>
+          <Btn onClick={onNew} variant="blue" size="sm">+ New Appeal</Btn>
+        </div>
+      </nav>
+      <div style={{ maxWidth: 780, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
+        <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 40, marginBottom: 8 }}>Your Cases</h1>
+        <p style={{ color: 'var(--text2)', marginBottom: 40, fontSize: 17 }}>Gene L. · Verified with World ID · No personal data stored</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {cases.map((c, i) => (
+            <div key={i} style={{ padding: '24px 28px', background: 'white', borderRadius: 20, border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', align: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 700, fontSize: 17 }}>{c.denied}</span>
+                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, background: statusColors[c.status] + '20', color: statusColors[c.status], fontWeight: 700 }}>{c.status}</span>
+                </div>
+                <div style={{ fontSize: 14, color: 'var(--text2)' }}>{c.insurer} · {c.date} · {c.amount}</div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: statusColors[c.status] }}>{c.confidence}%</div>
+                <div style={{ fontSize: 12, color: 'var(--text2)' }}>win prob{c.days > 0 ? ` · won in ${c.days}d` : ''}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 40, padding: '24px', background: 'var(--green-light)', borderRadius: 16, textAlign: 'center' }}>
+          <p style={{ fontWeight: 700, fontSize: 18, color: 'var(--green)' }}>2 wins, $4,200 recovered</p>
+          <p style={{ color: 'oklch(40% 0.1 155)', fontSize: 15 }}>Your appeals helped us improve outcomes for other Medicare patients too.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 7: PROFILE ────────────────────────────────────────────────────────
+function Profile({ onBack, onNewCase }) {
+  const [lang, setLang] = useState('English');
+  const [notifs, setNotifs] = useState(true);
+  const languages = ['English', 'Español', '中文', 'Tagalog', 'Tiếng Việt', '한국어'];
+  const cases = [
+    { date: 'Apr 25, 2026', denied: 'SNF Care — Post-Hospital', amount: '$12,400', status: 'Filed', color: 'var(--blue)' },
+    { date: 'Jan 12, 2026', denied: 'MRI — Lumbar Spine', amount: '$2,800', status: 'Won', color: 'var(--green)' },
+    { date: 'Oct 3, 2025', denied: 'Physical Therapy', amount: '$1,400', status: 'Won', color: 'var(--green)' },
+  ];
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <nav style={{ padding: '18px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', background: 'white' }}>
+        <Logo />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn onClick={onBack} variant="ghost" size="sm">← My Cases</Btn>
+          <Btn onClick={onNewCase} variant="blue" size="sm">+ New Appeal</Btn>
+        </div>
+      </nav>
+      <div style={{ maxWidth: 700, margin: '0 auto', padding: '52px 32px', width: '100%' }} className="fade-in">
+        <div style={{ background: 'var(--text)', borderRadius: 24, padding: '32px 36px', marginBottom: 28, display: 'flex', alignItems: 'center', gap: 24, color: 'white' }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 1 0 20M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 700, fontSize: 18 }}>Gene L.</span>
+              <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 20, background: 'var(--green)', color: 'white', fontWeight: 700 }}>✓ World ID Verified</span>
+            </div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'oklch(70% 0.02 255)', letterSpacing: 0.3 }}>wld_●●●●●●●●f3a9c · Medicare patient</div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: 11, color: 'oklch(65% 0.02 255)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>No PII stored</div>
+            <div style={{ fontSize: 12, color: 'oklch(75% 0.02 255)' }}>Anonymous · encrypted</div>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
+          {[['3','Appeals filed','var(--blue)'],['$4,200','Recovered','var(--green)'],['2/2','Wins (closed)','var(--green)']].map(([n,l,c]) => (
+            <div key={n} style={{ padding: '22px 24px', background: 'white', borderRadius: 18, border: '1.5px solid var(--border)', textAlign: 'center' }}>
+              <div style={{ fontFamily: 'DM Serif Display', fontSize: 36, color: c, lineHeight: 1, marginBottom: 6 }}>{n}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>{l}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid var(--border)', marginBottom: 24, overflow: 'hidden' }}>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontWeight: 700, fontSize: 16 }}>Your cases</h3>
+            <button onClick={onBack} style={{ fontSize: 13, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>View all</button>
+          </div>
+          {cases.map((c, i) => (
+            <div key={i} style={{ padding: '16px 24px', borderBottom: i < cases.length-1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: c.color, flexShrink: 0 }}></div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{c.denied}</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)' }}>{c.date} · {c.amount}</div>
+              </div>
+              <span style={{ fontSize: 12, padding: '4px 12px', borderRadius: 20, background: c.color + '18', color: c.color, fontWeight: 700 }}>{c.status}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ background: 'white', borderRadius: 20, border: '1.5px solid var(--border)', overflow: 'hidden', marginBottom: 24 }}>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+            <h3 style={{ fontWeight: 700, fontSize: 16 }}>Preferences</h3>
+          </div>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Language</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>All screens and letters will use this language</div>
+            </div>
+            <select value={lang} onChange={e => setLang(e.target.value)} style={{ padding: '10px 14px', borderRadius: 10, border: '1.5px solid var(--border)', fontSize: 15, background: 'var(--bg)', fontFamily: 'inherit', color: 'var(--text)', cursor: 'pointer' }}>
+              {languages.map(l => <option key={l}>{l}</option>)}
+            </select>
+          </div>
+          <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 2 }}>Appeal deadline reminders</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>Get reminders before your 60-day window closes</div>
+            </div>
+            <div onClick={() => setNotifs(v => !v)} style={{ width: 48, height: 28, borderRadius: 14, background: notifs ? 'var(--blue)' : 'var(--border)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+              <div style={{ position: 'absolute', top: 3, left: notifs ? 23 : 3, width: 22, height: 22, borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}></div>
+            </div>
+          </div>
+        </div>
+        <div style={{ padding: '20px 24px', background: 'var(--blue-light)', borderRadius: 16, border: '1px solid oklch(82% 0.08 255)' }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--blue)', marginBottom: 6 }}>Your privacy is the product</div>
+          <p style={{ fontSize: 13, color: 'oklch(38% 0.1 255)', lineHeight: 1.7 }}>Counterclaim never stores your name, Social Security number, or medical records. Your account is identified only by your World ID nullifier hash — a cryptographic proof that you're a real person, with zero personal data attached.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── APP ──────────────────────────────────────────────────────────────────────
+function App() {
+  const [screen, setScreen] = useState('landing');
+  const [caseResult, setCaseResult] = useState(null);
+  const [backendRunning, setBackendRunning] = useState(false);
+  const [backendStatus, setBackendStatus] = useState(null);
+
+  useEffect(() => {
+    apiJson('/api/latest')
+      .then(setCaseResult)
+      .catch(() => {});
+  }, []);
+
+  async function startAnalysis() {
+    setScreen('warroom');
+    setBackendRunning(true);
+    setBackendStatus({ type: 'info', message: 'Running real Counterclaim backend agents…' });
+    try {
+      const result = await apiJson('/api/run-demo', { method: 'POST' });
+      setCaseResult(result);
+      setBackendStatus({ type: 'success', message: 'Backend appeal packet generated from live agent artifacts.' });
+    } catch (err) {
+      console.error(err);
+      setBackendStatus({ type: 'error', message: `Backend run failed: ${err.message}. Showing latest generated demo artifacts.` });
+      try {
+        const latest = await apiJson('/api/latest');
+        setCaseResult(latest);
+      } catch (_) {}
+    } finally {
+      setBackendRunning(false);
+    }
+  }
+
+  const screens = {
+    landing: <Landing onNext={() => setScreen('upload')} onSignIn={() => setScreen('profile')} />,
+    upload: <Upload onNext={startAnalysis} />,
+    warroom: <WarRoom onNext={() => setScreen('remedy')} backendRunning={backendRunning} backendStatus={backendStatus} />,
+    remedy: <Remedy onNext={() => setScreen('letter')} />,
+    letter: <Letter onHistory={() => setScreen('history')} onProfile={() => setScreen('profile')} caseResult={caseResult} />,
+    history: <History onNew={() => setScreen('landing')} onProfile={() => setScreen('profile')} />,
+    profile: <Profile onBack={() => setScreen('history')} onNewCase={() => setScreen('landing')} />,
+  };
+
+  return screens[screen] || screens.landing;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
