@@ -23,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-@app.post("/parse")
+@app.post("/run")
 async def parse_documents(
     files: List[UploadFile] = File(...),
     patient_narrative: Optional[str] = Form(None)
