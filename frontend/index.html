@@ -41,6 +41,7 @@
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes travelLight { 0% { transform: translateX(-120%); } 100% { transform: translateX(220%); } }
   @keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
   @keyframes glow { 0%,100% { box-shadow: 0 0 12px oklch(52% 0.18 255 / 0.3); } 50% { box-shadow: 0 0 28px oklch(52% 0.18 255 / 0.7); } }
@@ -96,15 +97,12 @@ const AGENTS = [
   },
   {
     id: "personal", num: "3a", name: "Personal Evidence",
-    tagline: "Finding your strongest facts",
+    tagline: "Loaded from intake",
     color: "var(--amber)", lightColor: "var(--amber-light)",
     steps: [
-      "Reading medical records…",
-      "Found: 3-day qualifying hospital stay",
-      "Found: physician documented daily skilled care need",
-      "Found: comorbid diabetes (complicates healing)",
-      "No prior PT documentation — flagged",
-      "✓ Complete — 4 supporting facts",
+      "Using parsed patient facts…",
+      "No separate personal-evidence worker needed",
+      "✓ Complete — carried forward intake facts",
     ]
   },
   {
@@ -255,6 +253,25 @@ function getLiveLetter(caseResult) {
 
 function getLiveCitations(caseResult) {
   return caseResult?.drafted_letter?.citations_footnoted || caseResult?.appeal_packet?.citations_footnoted || null;
+}
+
+function formatCitationDisplay(citation, index) {
+  const rawLabel = citation?.label || citation?.source || `Citation ${citation?.footnote_index || index + 1}`;
+  const rawDescription = citation?.desc || citation?.quote || '';
+  const sourceLooksInternal = /^external_evidence\.citations\[\d+\]$/.test(rawLabel) || /^strategy\./.test(rawLabel);
+  if (sourceLooksInternal && rawDescription.includes(' — ')) {
+    const [title, ...rest] = rawDescription.split(' — ');
+    return {
+      chip: citation?.type || `Citation ${citation?.footnote_index || index + 1}`,
+      label: title,
+      desc: rest.join(' — '),
+    };
+  }
+  return {
+    chip: citation?.type || `Citation ${citation?.footnote_index || index + 1}`,
+    label: sourceLooksInternal ? `Citation ${citation?.footnote_index || index + 1}` : rawLabel,
+    desc: rawDescription,
+  };
 }
 
 function getLiveDeadline(caseResult) {
@@ -445,17 +462,17 @@ function Landing({ onNext, onSignIn }) {
 
 // ── SCREEN 2: UPLOAD ─────────────────────────────────────────────────────────
 function Upload({ onNext }) {
-  const [files, setFiles] = useState({ denial: null });
+  const [files, setFiles] = useState({ denial: null, denialFile: null, useDemo: false });
   const [story, setStory] = useState('');
   const denialInputRef = useRef(null);
 
   function useDemoDenial() {
-    setFiles({ denial: 'Demo_UHC_Denial_Letter_Mar2026.pdf' });
+    setFiles({ denial: 'Demo_UHC_Denial_Letter_Mar2026.pdf', denialFile: null, useDemo: true });
   }
 
   function handleDenialFile(event) {
     const file = event.target.files?.[0];
-    if (file) setFiles({ denial: file.name });
+    if (file) setFiles({ denial: file.name, denialFile: file, useDemo: false });
   }
 
   const canProceed = files.denial;
@@ -510,7 +527,7 @@ function Upload({ onNext }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--green-light)', borderRadius: 12 }}>
                     <span>✅</span>
                     <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--green)' }}>{files[s.key]}</span>
-                    <button onClick={() => setFiles(f => ({ ...f, [s.key]: null }))} style={{ marginLeft: 'auto', border: 'none', background: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 20 }}>×</button>
+                    <button onClick={() => setFiles(f => ({ ...f, [s.key]: null, denialFile: null, useDemo: false }))} style={{ marginLeft: 'auto', border: 'none', background: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 20 }}>×</button>
                   </div>
                 ) : (
                   <div
@@ -550,7 +567,7 @@ function Upload({ onNext }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 15, color: 'var(--text2)' }}>{canProceed ? '✓ Ready to analyze' : 'Upload denial letter to continue'}</span>
-          <Btn onClick={onNext} variant="blue" size="lg" disabled={!canProceed} style={{ opacity: canProceed ? 1 : 0.4 }}>
+          <Btn onClick={() => onNext({ denialFile: files.denialFile, useDemo: files.useDemo, patientNarrative: story })} variant="blue" size="lg" disabled={!canProceed} style={{ opacity: canProceed ? 1 : 0.4 }}>
             Analyze My Case →
           </Btn>
         </div>
@@ -606,6 +623,14 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
         setFactsCount(c => c + factBumps[ai]);
         setEvidenceCount(c => c + evidBumps[ai]);
       }]);
+      if (ai === 1) {
+        time += 160;
+        schedule.push([time, () => {
+          setAgentLines(prev => { const n=[...prev]; n[2]=AGENTS[2].steps.length; return n; });
+          setAgentDone(prev => { const n=[...prev]; n[2]=true; return n; });
+          setFactsCount(c => Math.max(c, 4));
+        }]);
+      }
       // Add citations for agents 3b and 4
       if (ai === 3) {
         CITS.slice(0,3).forEach((c, ci) => {
@@ -631,6 +656,7 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
   useEffect(() => {
     if (!jobEvents.length) return;
     const stepToAgent = {
+      doc_parser_agent: 0,
       seed_golden_artifacts: 0,
       contact_agent: 1,
       external_evidence_agent: 3,
@@ -640,7 +666,15 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
       drafting_agent_packet: 4,
       verification: 4,
     };
+    const finalAgentSteps = [
+      "appeal_strategy_input",
+      "appeal_strategy_agent",
+      "drafting_agent_letter",
+      "drafting_agent_packet",
+      "verification",
+    ];
     const labels = {
+      doc_parser_agent: "Document parser extracted denial details",
       seed_golden_artifacts: "Loaded parsed denial and patient facts",
       contact_agent: "Contact agent prepared missing-information requests",
       external_evidence_agent: "External evidence agent returned citation-backed policy evidence",
@@ -652,6 +686,11 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
     };
     const done = Array(5).fill(false);
     const lines = Array(5).fill(0);
+    const personalLoaded = jobEvents.some(event => event.step === "seed_golden_artifacts");
+    if (personalLoaded) {
+      done[2] = true;
+      lines[2] = AGENTS[2].steps.length;
+    }
     let active = 0;
     let facts = 0;
     let evidence = 0;
@@ -660,11 +699,36 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
       const index = stepToAgent[event.step];
       if (index === undefined) return;
       active = index;
-      done[index] = event.status !== "running";
-      lines[index] = Math.max(lines[index], Math.min(AGENTS[index].steps.length, 2 + (event.notes?.length || 0)));
+      if (index === 4) {
+        const finalStepIndex = finalAgentSteps.indexOf(event.step);
+        lines[index] = Math.max(lines[index], Math.min(AGENTS[index].steps.length, finalStepIndex + 1));
+        done[index] = event.step === "verification" && event.status !== "running" && !backendRunning;
+      } else {
+        done[index] = event.status !== "running";
+        lines[index] = Math.max(lines[index], Math.min(AGENTS[index].steps.length, 2 + (event.notes?.length || 0)));
+      }
       if (event.step === "seed_golden_artifacts") facts = Math.max(facts, 4);
       if (event.step === "external_evidence_agent") evidence = Math.max(evidence, 5);
     });
+
+    if (backendRunning) {
+      const latest = jobEvents[jobEvents.length - 1];
+      if (latest?.step === "doc_parser_agent") {
+        active = latest.status === "running" ? 0 : 1;
+      } else if (latest?.step === "seed_golden_artifacts") {
+        active = 1;
+      } else if (latest?.step === "contact_agent") {
+        active = 3;
+      } else if (latest?.step === "external_evidence_agent") {
+        active = 4;
+      } else if (stepToAgent[latest?.step] === 4) {
+        active = 4;
+      }
+      if (latest?.step === "verification" && latest.status !== "running") {
+        done[4] = false;
+        lines[4] = AGENTS[4].steps.length;
+      }
+    }
 
     setAgentPhase(active);
     setAgentDone(done);
@@ -713,7 +777,17 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
               <div key={agent.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <div style={{ height: 6, borderRadius: 3, background: agentDone[ai] ? agent.color : agentPhase === ai ? 'oklch(35% 0.04 255)' : 'var(--war-panel)', transition: 'background 0.5s', overflow: 'hidden', position: 'relative' }}>
                   {agentPhase === ai && !agentDone[ai] && (
-                    <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, transparent, ${agent.color}55, transparent)`, backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }}></div>
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: '46%',
+                      borderRadius: 3,
+                      background: `linear-gradient(90deg, transparent, ${agent.color}33, ${agent.color}, ${agent.color}33, transparent)`,
+                      filter: `drop-shadow(0 0 7px ${agent.color})`,
+                      animation: 'travelLight 1.15s ease-in-out infinite alternate',
+                    }}></div>
                   )}
                 </div>
                 <div style={{ fontSize: 9, color: agentDone[ai] ? agent.color : agentPhase === ai ? 'var(--war-text)' : 'var(--war-dim)', fontWeight: agentPhase === ai || agentDone[ai] ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</div>
@@ -968,15 +1042,18 @@ function Letter({ onHistory, onProfile, caseResult }) {
               { label: 'Appeals Council M-18-1122', desc: 'MA plan cannot apply stricter standard than Traditional Medicare', type: 'Precedent' },
               { label: 'Jimmo v. Sebelius (2013)', desc: 'Maintenance standard — no improvement required for coverage', type: 'Case Law' },
               { label: 'UHC CPB 0187', desc: "UHC's own clinical policy bulletin — criteria met per records", type: "Insurer's Own Policy" },
-            ]).map((c, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 12, background: 'var(--blue-light)', color: 'var(--blue)', whiteSpace: 'nowrap' }}>{c.type || `Citation ${c.footnote_index || i + 1}`}</span>
-                <div>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{c.label || c.source}</span>
-                  <span style={{ color: 'var(--text2)', fontSize: 13 }}> — {c.desc || c.quote}</span>
+            ]).map((c, i) => {
+              const citation = formatCitationDisplay(c, i);
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 12, background: 'var(--blue-light)', color: 'var(--blue)', whiteSpace: 'nowrap' }}>{citation.chip}</span>
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{citation.label}</span>
+                    {citation.desc && <span style={{ color: 'var(--text2)', fontSize: 13 }}> — {citation.desc}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1131,6 +1208,7 @@ function App() {
   const [backendStatus, setBackendStatus] = useState(null);
   const [jobEvents, setJobEvents] = useState([]);
   const [selectedRemedy, setSelectedRemedy] = useState(null);
+  const [uploadPayload, setUploadPayload] = useState(null);
 
   useEffect(() => {
     apiJson('/api/latest')
@@ -1145,10 +1223,28 @@ function App() {
     setJobEvents([]);
     setBackendStatus({ type: 'info', message: 'Running real Counterclaim backend agents…' });
     try {
-      const job = await apiJson('/api/run-demo-job', {
-        method: 'POST',
-        body: JSON.stringify({ user_preferences: buildUserPreferences(remedy) }),
-      });
+      let job = null;
+      if (uploadPayload?.denialFile && !uploadPayload?.useDemo) {
+        const form = new FormData();
+        form.append('files', uploadPayload.denialFile);
+        form.append('patient_narrative', uploadPayload.patientNarrative || '');
+        form.append('user_preferences', JSON.stringify(buildUserPreferences(remedy)));
+        const response = await fetch('/api/run-upload-job', { method: 'POST', body: form });
+        if (!response.ok) {
+          let detail = `${response.status} ${response.statusText}`;
+          try {
+            const body = await response.json();
+            detail = body.detail || detail;
+          } catch (_) {}
+          throw new Error(detail);
+        }
+        job = await response.json();
+      } else {
+        job = await apiJson('/api/run-demo-job', {
+          method: 'POST',
+          body: JSON.stringify({ user_preferences: buildUserPreferences(remedy) }),
+        });
+      }
       let finalJob = job;
       while (finalJob.status === 'queued' || finalJob.status === 'running') {
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -1179,7 +1275,7 @@ function App() {
 
   const screens = {
     landing: <Landing onNext={() => setScreen('upload')} onSignIn={() => setScreen('profile')} />,
-    upload: <Upload onNext={() => setScreen('remedy')} />,
+    upload: <Upload onNext={(payload) => { setUploadPayload(payload); setScreen('remedy'); }} />,
     remedy: <Remedy onNext={startAnalysis} />,
     warroom: <WarRoom onNext={() => setScreen('letter')} backendRunning={backendRunning} backendStatus={backendStatus} jobEvents={jobEvents} />,
     letter: <Letter onHistory={() => setScreen('history')} onProfile={() => setScreen('profile')} caseResult={caseResult} />,

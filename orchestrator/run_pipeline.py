@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import sys
-from json import JSONDecodeError
 from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Callable
@@ -161,24 +160,65 @@ def build_strategy_input(
 # FALLBACK DRAFTER
 # ─────────────────────────────────────────────────────────────────────────────
 
+def display_remedy(remedy: str) -> str:
+    labels = {
+        "full_overturn": "a full reversal of the denial",
+        "partial_approval": "approval of the medically necessary covered services",
+        "records_request": "reconsideration after review of the supporting records",
+        "external_review": "external review of the denial",
+    }
+    return labels.get(remedy, remedy.replace("_", " "))
+
+
+def concise_reasoning(text: str) -> str:
+    if not text:
+        return ""
+    stop_phrases = [
+        "The critical dependency",
+        "Confidence is set",
+        "Confidence:",
+        "Once obtained",
+    ]
+    cleaned = text
+    for phrase in stop_phrases:
+        if phrase in cleaned:
+            cleaned = cleaned.split(phrase, 1)[0]
+    lead_ins = [
+        "Full overturn is recommended because ",
+        "A full overturn is recommended because ",
+        "The appeal should be granted because ",
+    ]
+    for lead_in in lead_ins:
+        if cleaned.startswith(lead_in):
+            cleaned = cleaned[len(lead_in) :]
+    sentences = [sentence.strip() for sentence in cleaned.split(". ") if sentence.strip()]
+    return ". ".join(sentences[:3]).strip().rstrip(".")
+
+
 def fallback_draft(strategy: dict[str, Any], reason: str) -> dict[str, Any]:
     recommended = strategy.get("agent_recommended_remedy", "full_overturn")
-    reasoning = strategy.get("agent_recommendation_reasoning", "")
+    remedy_label = display_remedy(str(recommended))
+    reasoning = concise_reasoning(str(strategy.get("agent_recommendation_reasoning", "")))
     arguments = strategy.get("argument_chain", [])
 
     paragraphs = [
         "To Whom It May Concern:",
         (
-            "I am submitting this appeal to request reconsideration of the denial "
-            f"associated with case {strategy.get('case_id', 'unknown')}."
+            "I am submitting this appeal to request reconsideration of the denied "
+            f"services associated with case {strategy.get('case_id', 'unknown')}. "
+            f"I respectfully request {remedy_label}."
         ),
     ]
     for argument in arguments[:3]:
         claim = argument.get("claim")
         if claim:
             paragraphs.append(str(claim))
+    if reasoning:
+        paragraphs.append(f"This appeal should be granted because {reasoning}.")
     paragraphs.append(
-        f"Requested remedy: {recommended}. {reasoning}".strip()
+        "Please review the enclosed denial notice, patient-specific clinical information, "
+        "and cited coverage authorities. These materials show that the requested services "
+        "meet applicable coverage standards and should be approved."
     )
     paragraphs.append("Sincerely,\n[Patient / Authorized Representative]")
 
@@ -317,7 +357,7 @@ def run_pipeline(
     try:
         drafted = draft_letter(strategy)
         draft_notes: list[str] = []
-    except (JSONDecodeError, KeyError, ValueError) as exc:
+    except Exception as exc:
         drafted = fallback_draft(strategy, f"{type(exc).__name__}: {exc}")
         draft_notes = [drafted["generation_note"]]
 

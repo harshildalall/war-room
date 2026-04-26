@@ -1,62 +1,120 @@
-import json
-import anthropic
+from __future__ import annotations
 
-SYSTEM_PROMPT = """
-You are a medical insurance appeals drafter. You receive a structured
-appeal strategy and produce a final appeal letter and supporting metadata.
+from typing import Any
 
-STRICT RULES:
-- Do NOT introduce any new facts, diagnoses, or citations beyond what is
-  provided in the appeal_strategy JSON.
-- Every citation footnoted must come directly from contract_violations,
-  denial_linked_to_patient_facts, or denial_linked_to_policy fields.
-- Use formal, professional language appropriate for a health insurance appeal.
-- Letter structure: date/header → salutation → denial summary →
-  argument paragraphs (one per strongest_argument) → remedy request →
-  closing + signature block.
 
-Return ONLY valid JSON — no markdown, no preamble — matching this schema exactly:
-{
-  "appeal_letter": "<full letter as a single string, paragraphs separated by \\n\\n>",
-  "citations_footnoted": [
-    {
-      "footnote_index": 1,
-      "source": "<policy section, guideline name, or record type>",
-      "quote": "<exact short phrase from the strategy data>",
-      "relevance_score": 0.0
+def _display_remedy(remedy: str) -> str:
+    labels = {
+        "full_overturn": "a full reversal of the denial",
+        "partial_approval": "approval of the medically necessary covered services",
+        "records_request": "reconsideration after review of the supporting records",
+        "external_review": "external review of the denial",
+        "external_review_escalation": "external review if the internal appeal is not granted",
+        "procedural_remand": "a complete re-review with a documented clinical rationale",
     }
-  ],
-  "exhibits_checklist": [
-    {
-      "exhibit_label": "Exhibit A",
-      "description": "<what this exhibit is>",
-      "required": true
-    }
-  ],
-  "submission_instructions": ["<step 1>", "<step 2>"],
-  "deadline": "<ISO date string or 'See denial letter'>"
-}
-"""
+    return labels.get(remedy, remedy.replace("_", " "))
 
-def draft_letter(strategy: dict) -> dict:
-    client = anthropic.Anthropic()
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2048,
-        system=SYSTEM_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": (
-                "Draft the appeal letter from this strategy data only:\n\n"
-                + json.dumps(strategy, indent=2)
-            )
-        }],
+def _clean_sentence(text: Any) -> str:
+    value = str(text or "").strip()
+    return value.rstrip(".")
+
+
+def _build_citations(strategy: dict[str, Any]) -> list[dict[str, Any]]:
+    citations: list[dict[str, Any]] = []
+    seen_quotes: set[str] = set()
+    for violation in strategy.get("contract_violations", [])[:5]:
+        quote = _clean_sentence(violation.get("clause"))
+        if not quote or quote in seen_quotes:
+            continue
+        seen_quotes.add(quote)
+        citations.append(
+            {
+                "footnote_index": len(citations) + 1,
+                "source": violation.get("source", f"contract_violations[{len(citations)}]"),
+                "quote": quote,
+                "relevance_score": violation.get("contradiction_score", 0.0),
+                "_denial_contradicts": violation.get("denial_contradicts", ""),
+            }
+        )
+    return citations
+
+
+def _policy_paragraphs(strategy: dict[str, Any], citations: list[dict[str, Any]]) -> list[str]:
+    paragraphs: list[str] = []
+    for citation in citations[:4]:
+        clause = _clean_sentence(citation.get("quote"))
+        contradiction = _clean_sentence(citation.get("_denial_contradicts"))
+        if contradiction:
+            paragraphs.append(f"{clause}. {contradiction}. [{citation['footnote_index']}]")
+        else:
+            paragraphs.append(f"{clause}. [{citation['footnote_index']}]")
+    return paragraphs
+
+
+def draft_letter(strategy: dict[str, Any]) -> dict[str, Any]:
+    """Build a conservative appeal draft from citation-backed strategy fields.
+
+    This intentionally avoids free-form LLM prose. The strategy agent may reason
+    broadly, but the final appeal letter should only surface evidence that is
+    paired with a citation in `contract_violations`.
+    """
+
+    case_id = strategy.get("case_id", "unknown")
+    remedy = _display_remedy(str(strategy.get("agent_recommended_remedy", "full_overturn")))
+    citations = _build_citations(strategy)
+    policy_paragraphs = _policy_paragraphs(strategy, citations)
+
+    paragraphs = [
+        "To Whom It May Concern:",
+        (
+            "I am submitting this appeal to request reconsideration of the denied "
+            f"services associated with case {case_id}. I respectfully request {remedy}."
+        ),
+    ]
+
+    if policy_paragraphs:
+        paragraphs.extend(policy_paragraphs)
+    else:
+        paragraphs.append(
+            "The available policy evidence supports reconsideration of the denial. "
+            "Please review the enclosed coverage materials and patient-specific records."
+        )
+
+    paragraphs.append(
+        "For these reasons, the denial should be reversed or re-reviewed under the "
+        "coverage authorities cited above. Please include the cited policy materials, "
+        "the denial notice, and the relevant clinical records in the appeal file."
     )
+    paragraphs.append("Sincerely,\n[Patient / Authorized Representative]")
 
-    raw = response.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw)
+    return {
+        "appeal_letter": "\n\n".join(paragraphs),
+        "citations_footnoted": [
+            {key: value for key, value in citation.items() if not key.startswith("_")}
+            for citation in citations
+        ],
+        "exhibits_checklist": [
+            {
+                "exhibit_label": "Exhibit A",
+                "description": "Denial letter and plan/coverage documents",
+                "required": True,
+            },
+            {
+                "exhibit_label": "Exhibit B",
+                "description": "Patient-specific medical evidence and treating physician support",
+                "required": True,
+            },
+            {
+                "exhibit_label": "Exhibit C",
+                "description": "External policy and coverage citations",
+                "required": True,
+            },
+        ],
+        "submission_instructions": [
+            "Review the generated appeal letter for accuracy before submission.",
+            "Attach the cited exhibits and submit through the insurer appeal channel.",
+        ],
+        "deadline": strategy.get("appeal_deadline") or "See denial letter",
+        "generation_note": "Citation-grounded deterministic draft generated from contract_violations.",
+    }

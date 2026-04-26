@@ -1,0 +1,139 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 2141 >>
+stream
+BT
+/F1 11 Tf
+50 760 Td
+14 TL
+(From: UnitedHealthcare Claims Notification <claims-notice@uhc.example>) Tj
+T*
+(To: Jordan Rivera <jordan.rivera@example.com>) Tj
+T*
+(Date: Monday, April 20, 2026 at 8:14 AM) Tj
+T*
+(Subject: Important: Coverage decision for physical therapy claim DEMO-PT-97110) Tj
+T*
+T*
+(UnitedHealthcare Coverage Decision Notice) Tj
+T*
+T*
+(Dear Jordan Rivera,) Tj
+T*
+T*
+(We reviewed the claim submitted by your treating physician, Dr. Demo Orthopedics, for) Tj
+T*
+(outpatient physical therapy therapeutic exercise services following your right proximal) Tj
+T*
+(tibia fracture. Based on the information available to us at the time of review,) Tj
+T*
+(UnitedHealthcare has denied payment for the services listed below.) Tj
+T*
+T*
+(Member ID: DEMO-MEMBER-001) Tj
+T*
+(Plan ID: DEMO-UHC-001) Tj
+T*
+(Claim / Reference Number: DEMO-PT-97110) Tj
+T*
+(Service dates reviewed: April 1, 2026 and April 8, 2026) Tj
+T*
+(Procedure code denied: CPT 97110 - therapeutic exercise) Tj
+T*
+(Diagnosis code listed: S82.101A - unspecified fracture of upper end of right tibia,) Tj
+T*
+(initial encounter) Tj
+T*
+T*
+(Reason for denial) Tj
+T*
+T*
+(Physical therapy therapeutic exercise services were denied as not medically necessary.) Tj
+T*
+(The clinical records submitted did not show that the requested services met) Tj
+T*
+(UnitedHealthcare medical necessity criteria for continued outpatient rehabilitation) Tj
+T*
+(therapy.) Tj
+T*
+T*
+(Specifically, the information reviewed did not clearly document current functional) Tj
+T*
+(limitations, prior functional level, measurable therapy goals, or why skilled) Tj
+T*
+(therapeutic exercise under CPT 97110 was required instead of a home exercise program.) Tj
+T*
+T*
+(Appeal rights: You may request a first-level internal appeal if you disagree with this) Tj
+T*
+(decision. Your appeal must be received by May 30, 2026.) Tj
+T*
+T*
+(What you may send with an appeal) Tj
+T*
+T*
+(You may submit physician notes, therapy evaluations, functional status records,) Tj
+T*
+(treatment plans, and any other information showing why outpatient physical therapy was) Tj
+T*
+(medically necessary after the tibia fracture.) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 453 >>
+stream
+BT
+/F1 11 Tf
+50 760 Td
+14 TL
+(Appeals may be submitted by mail or through your member portal. Please include the) Tj
+T*
+(member ID, claim number, denied code CPT 97110, diagnosis code S82.101A, and the date of) Tj
+T*
+(this notice.) Tj
+T*
+T*
+(Sincerely,) Tj
+T*
+(UnitedHealthcare Appeals and Grievances Department) Tj
+T*
+T*
+(This sample notice is fictional and created for software testing. It contains no real) Tj
+T*
+(protected health information.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000002390 00000 n 
+0000002516 00000 n 
+0000003020 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+3146
+%%EOF
