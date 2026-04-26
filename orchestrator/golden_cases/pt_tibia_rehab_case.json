@@ -1,0 +1,122 @@
+{
+  "case_id": "demo-pt-tibia-001",
+  "patient_narrative": "I fractured my tibia and my doctor ordered physical therapy because I still have pain, weakness, and trouble walking safely. The insurer denied therapeutic exercises as not medically necessary.",
+  "denial_intake": {
+    "case_id": "demo-pt-tibia-001",
+    "schema_version": "1.0",
+    "status": "parsed",
+    "provenance": {
+      "source": "golden_case",
+      "contains_phi": false
+    },
+    "insurer": "UnitedHealthcare",
+    "plan_id": "DEMO-UHC-001",
+    "member_id": "DEMO-MEMBER-001",
+    "denied_procedure_codes": ["97110"],
+    "diagnosis_codes": ["S82.101A"],
+    "denial_reason_text": "Physical therapy therapeutic exercise services were denied as not medically necessary.",
+    "denial_reason_category": "medical_necessity",
+    "denial_date": "2026-04-20",
+    "appeal_deadline": "2026-05-30",
+    "appeal_level": "first_internal",
+    "treating_physician": "Dr. Demo Orthopedics",
+    "service_dates": ["2026-04-01", "2026-04-08"],
+    "confidence_score": 0.86
+  },
+  "missing_info_request": {
+    "case_id": "demo-pt-tibia-001",
+    "schema_version": "1.0",
+    "status": "pending",
+    "provenance": {
+      "source": "golden_case",
+      "contains_phi": false
+    },
+    "missing_fields": [
+      {
+        "field_name": "complete_plan_policy",
+        "importance": "medium"
+      },
+      {
+        "field_name": "full_denial_rationale",
+        "importance": "high"
+      }
+    ],
+    "can_proceed": true
+  },
+  "personal_evidence_task": {
+    "case_id": "demo-pt-tibia-001",
+    "schema_version": "1.0",
+    "status": "pending",
+    "provenance": {
+      "source": "golden_case",
+      "contains_phi": false
+    },
+    "denial_category": "medical_necessity",
+    "denied_procedures": ["97110"],
+    "diagnosis": ["S82.101A", "closed tibial fracture"],
+    "patient_narrative": "I still have pain and weakness after my tibia fracture and need therapy to walk safely.",
+    "evidence_gaps": [],
+    "instructions": {
+      "extract_symptoms": true,
+      "extract_treatment_history": true,
+      "flag_gaps": true,
+      "priority_fields": ["treating_physician_statement", "functional_limitations"]
+    }
+  },
+  "personal_evidence": {
+    "case_id": "demo-pt-tibia-001",
+    "schema_version": "1.0",
+    "status": "success",
+    "provenance": {
+      "source": "golden_case",
+      "contains_phi": false
+    },
+    "symptoms": [
+      "Persistent lower-leg pain after tibial fracture",
+      "Weakness with walking",
+      "Reduced balance and fear of falling"
+    ],
+    "treatment_history": [
+      {
+        "date": "2026-03-15",
+        "event": "Closed tibial fracture treated by orthopedics"
+      },
+      {
+        "date": "2026-04-01",
+        "event": "Physical therapy plan of care initiated for therapeutic exercise and gait recovery"
+      }
+    ],
+    "prior_treatment_attempts": [
+      {
+        "treatment": "Home exercise program",
+        "result": "Insufficient improvement without supervised therapeutic exercise"
+      }
+    ],
+    "treating_physician_statement": "Therapeutic exercise is medically necessary to restore strength, range of motion, balance, and safe ambulation after tibial fracture.",
+    "evidence_strength_score": 0.82,
+    "gaps_found": []
+  },
+  "external_evidence_task": {
+    "case_id": "demo-pt-tibia-001",
+    "schema_version": "1.0",
+    "status": "pending",
+    "provenance": {
+      "source": "golden_case",
+      "contains_phi": false
+    },
+    "search_queries": [
+      "CPT 97110 therapeutic exercise medical necessity tibial fracture rehabilitation",
+      "UnitedHealthcare outpatient physical therapy rehabilitation coverage criteria functional impairment",
+      "CMS outpatient physical therapy skilled therapy plan of care medical necessity"
+    ],
+    "preferred_sources": ["insurer policy", "CMS LCD", "CMS manual"],
+    "denial_category": "medical_necessity",
+    "insurer": "UnitedHealthcare",
+    "denied_procedures": ["97110"],
+    "diagnosis": ["closed tibial fracture"],
+    "codes": {
+      "cpt_hcpcs": ["97110"],
+      "icd10": ["S82.101A"]
+    }
+  }
+}
