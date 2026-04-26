@@ -1,3 +1,6 @@
+import asyncio
+asyncio.set_event_loop(asyncio.new_event_loop())
+
 from uagents import Agent, Context, Model
 import httpx
 
@@ -21,7 +24,7 @@ parser_agent = Agent(
     endpoint=["http://localhost:8002/submit"]
 )
 
-FASTAPI_URL = "http://localhost:8001/parse"
+FASTAPI_URL = "http://localhost:8001/run"
 
 @parser_agent.on_message(model=ParseRequest)
 async def handle_parse_request(ctx: Context, sender: str, msg: ParseRequest):
