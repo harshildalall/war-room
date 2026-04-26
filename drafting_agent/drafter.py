@@ -1,5 +1,5 @@
-import json
 import anthropic
+import json
 
 SYSTEM_PROMPT = """
 You are a medical insurance appeals drafter. You receive a structured
@@ -38,6 +38,61 @@ Return ONLY valid JSON — no markdown, no preamble — matching this schema exa
 }
 """
 
+DRAFT_TOOL = {
+    "name": "submit_appeal_draft",
+    "description": "Return the final appeal letter and supporting appeal packet metadata.",
+    "input_schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "appeal_letter": {
+                "type": "string",
+                "description": "Full appeal letter as one string with paragraphs separated by blank lines.",
+            },
+            "citations_footnoted": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "footnote_index": {"type": "integer"},
+                        "source": {"type": "string"},
+                        "quote": {"type": "string"},
+                        "relevance_score": {"type": "number"},
+                    },
+                    "required": ["footnote_index", "source", "quote", "relevance_score"],
+                },
+            },
+            "exhibits_checklist": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "exhibit_label": {"type": "string"},
+                        "description": {"type": "string"},
+                        "required": {"type": "boolean"},
+                    },
+                    "required": ["exhibit_label", "description", "required"],
+                },
+            },
+            "submission_instructions": {
+                "type": "array",
+                "items": {"type": "string"},
+            },
+            "deadline": {"type": "string"},
+        },
+        "required": [
+            "appeal_letter",
+            "citations_footnoted",
+            "exhibits_checklist",
+            "submission_instructions",
+            "deadline",
+        ],
+    },
+}
+
+
 def draft_letter(strategy: dict) -> dict:
     client = anthropic.Anthropic()
 
@@ -45,6 +100,8 @@ def draft_letter(strategy: dict) -> dict:
         model="claude-sonnet-4-6",
         max_tokens=2048,
         system=SYSTEM_PROMPT,
+        tools=[DRAFT_TOOL],
+        tool_choice={"type": "tool", "name": "submit_appeal_draft"},
         messages=[{
             "role": "user",
             "content": (
@@ -54,9 +111,7 @@ def draft_letter(strategy: dict) -> dict:
         }],
     )
 
-    raw = response.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw)
+    tool_use = next((block for block in response.content if block.type == "tool_use"), None)
+    if tool_use is None:
+        raise ValueError(f"Drafting model did not return structured tool output. stop_reason={response.stop_reason!r}")
+    return dict(tool_use.input)
