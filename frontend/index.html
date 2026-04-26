@@ -712,11 +712,17 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
 
     if (backendRunning) {
       const latest = jobEvents[jobEvents.length - 1];
-      const latestIndex = latest ? stepToAgent[latest.step] : undefined;
-      if (latestIndex === 0) active = 1;
-      if (latestIndex === 1) active = 3;
-      if (latestIndex === 3) active = 4;
-      if (latestIndex === 4) active = 4;
+      if (latest?.step === "doc_parser_agent") {
+        active = latest.status === "running" ? 0 : 1;
+      } else if (latest?.step === "seed_golden_artifacts") {
+        active = 1;
+      } else if (latest?.step === "contact_agent") {
+        active = 3;
+      } else if (latest?.step === "external_evidence_agent") {
+        active = 4;
+      } else if (stepToAgent[latest?.step] === 4) {
+        active = 4;
+      }
       if (latest?.step === "verification" && latest.status !== "running") {
         done[4] = false;
         lines[4] = AGENTS[4].steps.length;
