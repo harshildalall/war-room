@@ -58,7 +58,7 @@ Each agent is an independent FastAPI service. They communicate exclusively via J
 
 Counterclaim ships with an ASI:One-compatible coordinator at `fetch_agents/counterclaim_coordinator.py`. It implements the mandatory Agent Chat Protocol and exposes the full pipeline as a discoverable Agentverse workflow.
 
-- **ASI1 Chat Session:** https://asi1.ai/shared-chat/d6a13959-1b64-4e1d-b34c-7335ad570468
+- **ASI1 Chat Session:**  https://asi1.ai/shared-chat/93bd0964-153c-4a24-8061-a1265b9b5a9d
 - **Agent Profile:** https://agentverse.ai/agents/details/agent1qwv5hzqy6vq4g8srs3d5hjzxjkss9p0tacvmhdkecus8fk55z5rdv6leevj/profile
 
 ---
