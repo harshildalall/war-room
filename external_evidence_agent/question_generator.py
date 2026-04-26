@@ -6,13 +6,49 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 from query_planner import build_queries, dedupe_queries, extract_codes, preferred_source_types
 from schemas import EvidenceQuery, ExternalEvidenceTask, QueryStrategy, SourceType
 
 
 AGENT_DIR = Path(__file__).resolve().parent
+SOURCE_TYPE_ALIASES = {
+    "cms ncd": "CMS_NCD",
+    "cms_ncd": "CMS_NCD",
+    "ncd": "CMS_NCD",
+    "cms lcd": "CMS_LCD",
+    "cms_lcd": "CMS_LCD",
+    "lcd": "CMS_LCD",
+    "cms manual": "CMS_MANUAL",
+    "cms_manual": "CMS_MANUAL",
+    "manual": "CMS_MANUAL",
+    "insurer policy": "INSURER_POLICY",
+    "insurer_policy": "INSURER_POLICY",
+    "payer policy": "INSURER_POLICY",
+    "policy": "INSURER_POLICY",
+    "specialty guideline": "SPECIALTY_GUIDELINE",
+    "specialty guidelines": "SPECIALTY_GUIDELINE",
+    "specialty_guideline": "SPECIALTY_GUIDELINE",
+    "guideline": "SPECIALTY_GUIDELINE",
+    "guidelines": "SPECIALTY_GUIDELINE",
+    "appeals precedent": "APPEALS_PRECEDENT",
+    "appeals_precedent": "APPEALS_PRECEDENT",
+    "precedent": "APPEALS_PRECEDENT",
+    "other": "OTHER",
+}
+STRATEGY_ALIASES = {
+    "exact code": "exact_code",
+    "exact_code": "exact_code",
+    "code": "exact_code",
+    "semantic": "semantic",
+    "hybrid": "hybrid",
+    "policy lookup": "policy_lookup",
+    "policy_lookup": "policy_lookup",
+    "policy": "policy_lookup",
+    "manual": "manual",
+    "manual lookup": "manual",
+}
 
 
 class QueryPlan(BaseModel):
@@ -66,8 +102,8 @@ def generate_llm_queries(task: ExternalEvidenceTask, top_k: int = 8) -> tuple[li
         return [], [f"LLM query generation failed; deterministic queries used. Error: {type(exc).__name__}"]
 
     try:
-        response = LLMQueryResponse.model_validate_json(extract_json_object(raw))
-    except (ValidationError, ValueError, json.JSONDecodeError) as exc:
+        response = parse_llm_response(raw)
+    except (ValueError, json.JSONDecodeError) as exc:
         return [], [f"LLM query generation returned invalid JSON; deterministic queries used. Error: {type(exc).__name__}"]
 
     queries = normalize_llm_queries(task, response.queries, top_k=top_k)
@@ -104,7 +140,7 @@ Prefer intents that test:
 Allowed strategies: {allowed_strategies}
 Allowed source_types: {allowed_source_types}
 
-Return only JSON in this exact shape:
+Return only valid JSON in this exact shape. Do not wrap it in Markdown:
 {{
   "queries": [
     {{
@@ -158,6 +194,94 @@ def extract_json_object(text: str) -> str:
     if start == -1 or end == -1 or end <= start:
         raise ValueError("No JSON object found in LLM response.")
     return text[start : end + 1]
+
+
+def parse_llm_response(raw: str) -> LLMQueryResponse:
+    payload = json.loads(extract_json_object(raw))
+    if isinstance(payload, list):
+        raw_queries = payload
+    elif isinstance(payload, dict):
+        raw_queries = (
+            payload.get("queries")
+            or payload.get("retrieval_intents")
+            or payload.get("intents")
+            or payload.get("evidence_queries")
+            or []
+        )
+    else:
+        raise ValueError("LLM response must be a JSON object or list.")
+
+    if not isinstance(raw_queries, list):
+        raise ValueError("LLM response queries field must be a list.")
+
+    intents: list[LLMQueryIntent] = []
+    for raw_query in raw_queries[:8]:
+        if not isinstance(raw_query, dict):
+            continue
+        query_text = raw_query.get("query") or raw_query.get("query_text") or raw_query.get("search_query")
+        if not isinstance(query_text, str) or not query_text.strip():
+            continue
+
+        strategy = normalize_strategy(raw_query.get("strategy"))
+        source_types = normalize_source_types(raw_query.get("source_types") or raw_query.get("sources"))
+        codes = normalize_codes(raw_query.get("codes"))
+        rationale = raw_query.get("rationale") or raw_query.get("reason")
+
+        intents.append(
+            LLMQueryIntent(
+                query=query_text,
+                strategy=strategy,
+                source_types=source_types,
+                codes=codes,
+                rationale=rationale if isinstance(rationale, str) else None,
+            )
+        )
+
+    return LLMQueryResponse(queries=intents)
+
+
+def normalize_strategy(value: Any) -> QueryStrategy:
+    if isinstance(value, str):
+        normalized = value.strip().lower().replace("-", "_")
+        normalized = STRATEGY_ALIASES.get(normalized, normalized)
+        if normalized in {"exact_code", "semantic", "hybrid", "policy_lookup", "manual"}:
+            return normalized  # type: ignore[return-value]
+    return "hybrid"
+
+
+def normalize_source_types(value: Any) -> list[SourceType]:
+    if not value:
+        return []
+    values = value if isinstance(value, list) else [value]
+    normalized: list[SourceType] = []
+    for item in values:
+        if not isinstance(item, str):
+            continue
+        key = item.strip().lower().replace("-", "_")
+        source_type = SOURCE_TYPE_ALIASES.get(key, item.strip().upper().replace(" ", "_").replace("-", "_"))
+        if source_type in {
+            "CMS_NCD",
+            "CMS_LCD",
+            "CMS_MANUAL",
+            "INSURER_POLICY",
+            "SPECIALTY_GUIDELINE",
+            "APPEALS_PRECEDENT",
+            "OTHER",
+        } and source_type not in normalized:
+            normalized.append(source_type)  # type: ignore[arg-type]
+    return normalized
+
+
+def normalize_codes(value: Any) -> list[str]:
+    if not value:
+        return []
+    values = value if isinstance(value, list) else [value]
+    codes: list[str] = []
+    for item in values:
+        code = str(item).strip().upper()
+        if code and code not in codes:
+            codes.append(code)
+    return codes
 
 
 def normalize_llm_queries(
