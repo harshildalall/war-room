@@ -1,0 +1,27 @@
+{
+  "case_id": "597d9f32-68dd-4020-831f-a35f5a874d6a",
+  "argument_chain": [
+    "The denial cites lack of medical necessity, but CPT 97110 is standard care for tibial fractures",
+    "UnitedHealthcare's own clinical guidelines support physical therapy post-fracture"
+  ],
+  "strongest_arguments": [
+    "Physical therapy is medically necessary following tibial fracture per AAOS 2024 guidelines",
+    "Denial contradicts insurer's own coverage policy for post-surgical rehabilitation"
+  ],
+  "contract_violations": [
+    {"clause": "Section 4.2.1 - Medical Necessity", "contradiction_score": 0.87},
+    {"clause": "Section 7.3 - Rehabilitation Coverage", "contradiction_score": 0.74}
+  ],
+  "recommended_remedy": "full_overturn",
+  "confidence_score": 0.68,
+  "denial_linked_to_patient_facts": {
+    "diagnosis": "S82.101A - Tibial fracture",
+    "procedure": "CPT 97110 - Therapeutic exercises",
+    "denial_reason": "Not medically necessary"
+  },
+  "denial_linked_to_policy": {
+    "policy_section": "Section 4.2.1",
+    "policy_text": "Coverage requires physician-confirmed medical necessity",
+    "contradiction": "Denial was issued without physician review"
+  }
+}
