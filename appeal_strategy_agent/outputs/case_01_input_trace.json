@@ -1,0 +1,50 @@
+{
+  "case_id": "CC-2026-001",
+  "argument_chain": [
+    {
+      "claim": "The patient's ongoing skilled nursing needs are medically necessary under CMS criteria regardless of improvement plateau \u2014 the denial misapplies the improvement standard that was repudiated by the Jimmo settlement. The patient requires daily skilled insulin management, wound assessment, supervised PT, and fall prevention, all of which satisfy the 'maintenance and prevention of deterioration' standard.",
+      "claim_type": "medical_necessity",
+      "supporting_evidence": [
+        "external_evidence.citations[0]",
+        "external_evidence.citations[1]",
+        "personal_evidence.treating_physician_statement",
+        "personal_evidence.symptoms"
+      ],
+      "strength": 0.95
+    },
+    {
+      "claim": "UnitedHealthcare's denial contradicts its own 2026 Coverage Summary for SNF Services, which explicitly states that continued SNF coverage is appropriate for members with comorbid diabetes mellitus complicating post-orthopedic recovery \u2014 the exact clinical picture present here.",
+      "claim_type": "policy_violation",
+      "supporting_evidence": [
+        "external_evidence.citations[4]",
+        "personal_evidence.treating_physician_statement",
+        "personal_evidence.treatment_history"
+      ],
+      "strength": 0.92
+    },
+    {
+      "claim": "As a Medicare Advantage plan, UnitedHealthcare is federally prohibited from applying internal coverage criteria more restrictive than traditional Medicare, and must base determinations on the individual's specific circumstances. The denial's blanket 'plateau' rationale violates 42 CFR \u00a7422.101(b)(2) and CMS-4201-F, and substitutes a non-CMS standard for the individualized assessment required by law.",
+      "claim_type": "policy_violation",
+      "supporting_evidence": [
+        "external_evidence.citations[2]",
+        "external_evidence.citations[3]",
+        "external_evidence.citations[1]",
+        "denial_intake.denial_reason_text"
+      ],
+      "strength": 0.91
+    },
+    {
+      "claim": "The patient's prior history of premature home discharge following the November 2025 wrist fracture \u2014 which resulted in re-injury within 9 days and a second surgery \u2014 directly contradicts the insurer's assertion that care can be 'safely transitioned' to home health. The AAOS 6-8 week non-weight-bearing protocol and the patient's Morse fall risk score of 18/25 further establish that home-level care is clinically contraindicated at this time.",
+      "claim_type": "medical_necessity",
+      "supporting_evidence": [
+        "personal_evidence.prior_treatment_attempts",
+        "personal_evidence.treating_physician_statement",
+        "external_evidence.guidelines_found",
+        "contact_actions.additional_docs_retrieved"
+      ],
+      "strength": 0.89
+    }
+  ],
+  "agent_recommended_remedy": "full_overturn",
+  "agent_recommendation_reasoning": "Full overturn at first internal appeal is the recommended path for this case, and the evidence profile justifies a higher-than-baseline confidence (0.72 vs. the typical ~0.40 redetermination base rate) for four compounding reasons: (1) the personal evidence has no identified gaps and includes a detailed, individualized physician statement from a geriatrics specialist that directly addresses and forecloses every element of the insurer's denial rationale; (2) the denial applies the improvement-standard rationale that Jimmo expressly prohibits \u2014 this is a recognized, reversible legal error that CMS appeals reviewers are trained to identify; (3) UHC's own 2026 SNF Coverage Summary affirmatively supports coverage for this exact clinical profile, creating an internal self-contradiction that is difficult for a reviewer to ignore; and (4) the CMS appeals database has already returned 14 favorable precedent matches on similar nH Predict SNF termination patterns.\n\nCompared to procedural remand (confidence 0.58, $0 direct recovery): while the algorithmic-review procedural argument is genuine and should be pleaded as a secondary argument within the full-overturn letter, pursuing remand as the primary remedy would delay actual coverage restoration by an estimated 30+ additional days and produces no direct financial recovery \u2014 it only resets the clock. The patient is a 91-year-old in active post-surgical recovery where every additional day of SNF coverage matters clinically. Procedural remand is best deployed as a supplemental argument to pressure a favorable merits resolution, not as the standalone strategy.\n\nCompared to external review escalation (confidence 0.50, 120-day timeline): external review is not yet available (first internal appeal has not been completed) and adds 60+ days beyond the internal appeal timeline. It is the correct fallback if this level fails, and the case will remain strong at that level \u2014 but it is not the recommended primary path when a strong merits case exists at the current level.\n\nRecommended approach: File for full overturn at first internal appeal, leading with the Jimmo/maintenance-standard argument and the UHC self-contradiction, supported by Dr. Smith's letter and the prior re-injury history. Plead the algorithmic-review procedural violation as a secondary argument, noting the pending \u00a7422.568(f) request and reserving the right to supplement. If denied, escalate to external review with the same record intact."
+}

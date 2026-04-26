@@ -1,0 +1,104 @@
+{
+  "denial_intake": {
+    "case_id": "CC-2026-002",
+    "insurer": "Centers for Medicare & Medicaid Services (Traditional Medicare Part B)",
+    "plan_id": "MEDICARE-PART-B",
+    "member_id": "1EG4-TE5-MK72",
+    "denied_procedure_codes": ["72148"],
+    "diagnosis_codes": ["M54.50", "M51.36"],
+    "denial_reason_text": "The submitted documentation does not establish medical necessity for MRI of the lumbar spine without contrast under the applicable Local Coverage Determination. Documentation should include specific neurologic deficit, failure of conservative therapy, or red-flag findings. Reconsideration is denied; the QIC concurs with the contractor's prior determination.",
+    "denial_reason_category": "lack_of_medical_necessity_documentation",
+    "denial_date": "2026-04-09",
+    "appeal_deadline": "2026-10-06",
+    "appeal_level": "second_external",
+    "treating_physician": "Dr. Marcus Lee, MD (Family Medicine, Sunset Family Health)",
+    "service_dates": ["2026-02-22"],
+    "confidence_score": 0.89
+  },
+  "personal_evidence": {
+    "case_id": "CC-2026-002",
+    "symptoms": [
+      "constant aching low back pain, 8 weeks duration, worse with sitting",
+      "intermittent right buttock pain radiating to posterior thigh",
+      "morning stiffness lasting approximately 30 minutes",
+      "pain rated 5-7/10 on visual analog scale, partially responsive to NSAIDs"
+    ],
+    "treatment_history": [
+      {"date": "2025-12-28", "event": "Initial PCP visit for low back pain; prescribed naproxen and home exercise"},
+      {"date": "2026-01-12", "event": "Pain unchanged at 4-week follow-up; PT referral placed"},
+      {"date": "2026-01-19", "event": "PT evaluation at Sunset Rehab; began 2x/week regimen"},
+      {"date": "2026-02-16", "event": "Completed 6 weeks of PT (12 sessions); minimal improvement reported by patient and PT"},
+      {"date": "2026-02-22", "event": "Follow-up with Dr. Lee; MRI ordered to evaluate for disc pathology"}
+    ],
+    "prior_treatment_attempts": [
+      {"modality": "NSAIDs (naproxen 500mg BID)", "duration_weeks": 8, "outcome": "partial relief, pain reduced from 7/10 to 5/10"},
+      {"modality": "Physical therapy (12 sessions)", "duration_weeks": 6, "outcome": "minimal functional improvement; patient unable to return to baseline activity"},
+      {"modality": "Home exercise program", "duration_weeks": 8, "outcome": "compliant per patient report; no measurable change"}
+    ],
+    "treating_physician_statement": "68-year-old male with 8 weeks of persistent low back pain with right-sided radicular features, refractory to a documented trial of NSAIDs and 6 weeks of supervised physical therapy. MRI is requested to evaluate for disc herniation given lack of response to conservative care. — Marcus Lee, MD",
+    "evidence_strength_score": 0.62,
+    "gaps_found": [
+      "no documented straight-leg raise test or detailed neurological exam findings in chart",
+      "no documented motor strength, reflex, or sensory exam in the order note",
+      "physician letter is brief (3 sentences) and does not address LCD criteria item-by-item",
+      "no imaging studies prior to MRI request (e.g., plain radiographs)"
+    ]
+  },
+  "external_evidence": {
+    "case_id": "CC-2026-002",
+    "citations": [
+      {
+        "source": "LCD L34547 (Magnetic Resonance Imaging of the Spine), Noridian Healthcare Solutions, revised 2025-09",
+        "quote": "MRI of the lumbar spine is considered medically necessary for evaluation of low back pain when conservative therapy of at least 6 weeks has failed to provide adequate relief, OR when red-flag symptoms are present.",
+        "relevance_score": 0.88
+      },
+      {
+        "source": "American College of Radiology Appropriateness Criteria: Low Back Pain (2024 update)",
+        "quote": "MRI without contrast is usually appropriate (rating 7) for adults with chronic low back pain (>6 weeks) with or without radiculopathy who have failed conservative management.",
+        "relevance_score": 0.82
+      },
+      {
+        "source": "North American Spine Society Evidence-Based Clinical Guidelines: Lumbar Disc Herniation with Radiculopathy (2012, reaffirmed 2023)",
+        "quote": "MRI is the imaging modality of choice for confirming the presence of suspected lumbar disc herniation with radiculopathy when initial conservative management has failed.",
+        "relevance_score": 0.80
+      },
+      {
+        "source": "Medicare Program Integrity Manual, CMS Pub 100-08, Chapter 13",
+        "quote": "Documentation must support the medical necessity of services, including the specific clinical findings that establish the need for the ordered service.",
+        "relevance_score": 0.70
+      }
+    ],
+    "guidelines_found": [
+      "ACR Appropriateness Criteria: Low Back Pain (2024)",
+      "NASS Evidence-Based Clinical Guidelines: Lumbar Disc Herniation with Radiculopathy",
+      "American College of Physicians Guideline for Noninvasive Treatment of Low Back Pain (2017)"
+    ],
+    "cms_ncd_references": [
+      "LCD L34547 (Noridian — MRI of the Spine)",
+      "CMS Pub 100-08 Ch. 13 (Documentation requirements)"
+    ],
+    "evidence_strength_score": 0.70
+  },
+  "contact_actions": {
+    "case_id": "CC-2026-002",
+    "actions_taken": [
+      "Requested supplemental letter of medical necessity from Dr. Lee addressing LCD criteria item-by-item — pending; office indicated 7-10 business day turnaround",
+      "Requested PT discharge summary from Sunset Rehab — received",
+      "Requested addendum to chart with documented neurological exam findings — partially received (Dr. Lee added a note from a 2026-03-04 visit documenting normal reflexes and 5/5 strength bilaterally)",
+      "Searched QIC reconsideration outcomes for similar lumbar MRI denials in this MAC region — 6 reversals, 11 affirmations identified (mixed pattern)"
+    ],
+    "supplemental_sources": [
+      {
+        "source": "Sunset Rehab PT discharge summary",
+        "type": "clinical_record",
+        "result": "Confirms 12 sessions completed; documents minimal functional gain on Oswestry Disability Index (47 → 41)"
+      }
+    ],
+    "outreach_status": "partial",
+    "additional_docs_retrieved": [
+      "PT discharge summary (Sunset Rehab)",
+      "Chart addendum from Dr. Lee dated 2026-03-04 with neurological exam findings",
+      "Pharmacy fill history confirming naproxen compliance"
+    ]
+  }
+}

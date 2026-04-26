@@ -1,0 +1,136 @@
+{
+  "name": "submit_strategy",
+  "description": "Submit the complete appeal strategy analysis for the case.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {"type": "string"},
+      "argument_chain": {
+        "type": "array",
+        "maxItems": 4,
+        "items": {
+          "type": "object",
+          "properties": {
+            "claim": {"type": "string"},
+            "claim_type": {
+              "type": "string",
+              "enum": ["medical_necessity", "policy_violation", "procedural", "precedent"]
+            },
+            "supporting_evidence": {
+              "type": "array",
+              "description": "Reference paths into the input JSONs, not full quoted text. The drafting agent will resolve these references against the original input data. Examples: 'external_evidence.citations[2]', 'personal_evidence.treatment_history[0]', 'denial_intake.denial_reason_text'.",
+              "items": {"type": "string"}
+            },
+            "strength": {"type": "number"}
+          },
+          "required": ["claim", "claim_type", "supporting_evidence", "strength"]
+        }
+      },
+      "contract_violations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "clause": {"type": "string"},
+            "source": {"type": "string"},
+            "denial_contradicts": {"type": "string"},
+            "contradiction_score": {"type": "number"}
+          },
+          "required": ["clause", "source", "denial_contradicts", "contradiction_score"]
+        }
+      },
+      "remedy_options": {
+        "type": "array",
+        "maxItems": 3,
+        "items": {
+          "type": "object",
+          "properties": {
+            "remedy_type": {
+              "type": "string",
+              "enum": ["full_overturn", "partial_coverage", "external_review_escalation", "procedural_remand"]
+            },
+            "primary_argument": {"type": "string"},
+            "supporting_argument_indices": {
+              "type": "array",
+              "items": {"type": "integer"}
+            },
+            "confidence_score": {"type": "number"},
+            "estimated_timeline_days": {"type": "integer"},
+            "estimated_recovery_amount": {"type": "number"},
+            "key_risks": {"type": "array", "items": {"type": "string"}}
+          },
+          "required": [
+            "remedy_type",
+            "primary_argument",
+            "supporting_argument_indices",
+            "confidence_score",
+            "estimated_timeline_days",
+            "estimated_recovery_amount",
+            "key_risks"
+          ]
+        }
+      },
+      "agent_recommended_remedy": {
+        "type": "string",
+        "enum": ["full_overturn", "partial_coverage", "external_review_escalation", "procedural_remand"]
+      },
+      "agent_recommendation_reasoning": {"type": "string"},
+      "denial_linked_to_patient_facts": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "denial_assertion": {
+                  "type": "string",
+                  "maxLength": 150,
+                  "description": "Short summary of what the insurer claimed (max ~150 chars)."
+                },
+                "contradicting_fact": {
+                  "type": "string",
+                  "description": "Reference path into the input JSONs (e.g., 'personal_evidence.treating_physician_statement'), not full quoted text."
+                },
+                "evidence_source": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "denial_linked_to_policy": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "denial_assertion": {
+                  "type": "string",
+                  "maxLength": 150,
+                  "description": "Short summary of what the insurer claimed (max ~150 chars)."
+                },
+                "contradicting_policy": {
+                  "type": "string",
+                  "description": "Reference path into the input JSONs (e.g., 'external_evidence.citations[3]'), not full quoted text."
+                },
+                "policy_source": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "argument_chain",
+      "contract_violations",
+      "remedy_options",
+      "agent_recommended_remedy",
+      "agent_recommendation_reasoning",
+      "denial_linked_to_patient_facts",
+      "denial_linked_to_policy"
+    ]
+  }
+}
