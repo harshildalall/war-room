@@ -33,13 +33,13 @@ def make_provenance(source_files: list[str]) -> dict:
     """
     {
         source_files:   list[str]   — filenames or artifact paths that produced this doc
-        parsed_at:      datetime    — UTC timestamp of when parsing ran
+        parsed_at:      str         — ISO UTC timestamp of when parsing ran
         parser_version: str
     }
     """
     return {
         "source_files": source_files,
-        "parsed_at": datetime.now(UTC),
+        "parsed_at": datetime.now(UTC).isoformat(),
         "parser_version": "1.0",
     }
 
