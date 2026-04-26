@@ -645,6 +645,13 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
       drafting_agent_packet: 4,
       verification: 4,
     };
+    const finalAgentSteps = [
+      "appeal_strategy_input",
+      "appeal_strategy_agent",
+      "drafting_agent_letter",
+      "drafting_agent_packet",
+      "verification",
+    ];
     const labels = {
       seed_golden_artifacts: "Loaded parsed denial and patient facts",
       contact_agent: "Contact agent prepared missing-information requests",
@@ -670,11 +677,30 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
       const index = stepToAgent[event.step];
       if (index === undefined) return;
       active = index;
-      done[index] = event.status !== "running";
-      lines[index] = Math.max(lines[index], Math.min(AGENTS[index].steps.length, 2 + (event.notes?.length || 0)));
+      if (index === 4) {
+        const finalStepIndex = finalAgentSteps.indexOf(event.step);
+        lines[index] = Math.max(lines[index], Math.min(AGENTS[index].steps.length, finalStepIndex + 1));
+        done[index] = event.step === "verification" && event.status !== "running" && !backendRunning;
+      } else {
+        done[index] = event.status !== "running";
+        lines[index] = Math.max(lines[index], Math.min(AGENTS[index].steps.length, 2 + (event.notes?.length || 0)));
+      }
       if (event.step === "seed_golden_artifacts") facts = Math.max(facts, 4);
       if (event.step === "external_evidence_agent") evidence = Math.max(evidence, 5);
     });
+
+    if (backendRunning) {
+      const latest = jobEvents[jobEvents.length - 1];
+      const latestIndex = latest ? stepToAgent[latest.step] : undefined;
+      if (latestIndex === 0) active = 1;
+      if (latestIndex === 1) active = 3;
+      if (latestIndex === 3) active = 4;
+      if (latestIndex === 4) active = 4;
+      if (latest?.step === "verification" && latest.status !== "running") {
+        done[4] = false;
+        lines[4] = AGENTS[4].steps.length;
+      }
+    }
 
     setAgentPhase(active);
     setAgentDone(done);
