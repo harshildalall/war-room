@@ -1,0 +1,34 @@
+{
+  "case_id": "fake-case-pt-tibia-001",
+  "schema_version": "1.0",
+  "status": "pending",
+  "provenance": {
+    "source": "manual_test_fixture",
+    "contains_phi": false
+  },
+  "search_queries": [
+    "CPT 97110 therapeutic exercise medical necessity tibial fracture rehabilitation",
+    "UnitedHealthcare outpatient physical therapy rehabilitation coverage criteria functional impairment",
+    "CMS outpatient physical therapy skilled therapy plan of care medical necessity"
+  ],
+  "preferred_sources": [
+    "insurer policy",
+    "CMS LCD",
+    "CMS manual"
+  ],
+  "denial_category": "medical_necessity",
+  "insurer": "UnitedHealthcare",
+  "denied_procedures": [
+    "97110"
+  ],
+  "diagnosis": [
+    "closed tibial fracture",
+    "post-fracture functional limitation"
+  ],
+  "codes": {
+    "cpt_hcpcs": [
+      "97110"
+    ],
+    "icd10": []
+  }
+}

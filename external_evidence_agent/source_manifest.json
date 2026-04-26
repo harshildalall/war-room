@@ -1,0 +1,62 @@
+[
+  {
+    "source_id": "uhc_habilitation_rehabilitation_therapy_2026",
+    "source_type": "INSURER_POLICY",
+    "title": "UnitedHealthcare Habilitation and Rehabilitation Therapy (Occupational, Physical, and Speech)",
+    "local_path": "curated_sources/habilitative-services-outpatient-rehabilitation-therapy.txt",
+    "url": "https://ams-gateway.uhcprovider.com/content/dam/provider/docs/public/policies/comm-medical-drug/habilitative-services-outpatient-rehabilitation-therapy.pdf",
+    "citation_label": "UnitedHealthcare Commercial and Individual Exchange Medical Policy MP.026.26",
+    "insurer": "UnitedHealthcare",
+    "effective_date": "2026-01-01",
+    "codes": ["97110"],
+    "diagnosis_codes": [],
+    "condition_terms": ["tibial fracture", "fracture rehabilitation", "functional impairment"],
+    "service_terms": ["physical therapy", "rehabilitation therapy", "therapeutic exercise", "outpatient rehabilitation"],
+    "manual_reviewed": true
+  },
+  {
+    "source_id": "cms_lcd_outpatient_physical_therapy_l34428",
+    "source_type": "CMS_LCD",
+    "title": "LCD - Outpatient Physical Therapy (L34428)",
+    "local_path": "curated_sources/LCD - Outpatient Physical Therapy (L34428).txt",
+    "url": "https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?LCDId=34428",
+    "citation_label": "CMS Local Coverage Determination L34428",
+    "insurer": null,
+    "effective_date": null,
+    "codes": ["97110"],
+    "diagnosis_codes": [],
+    "condition_terms": ["tibial fracture", "injury", "functional impairment"],
+    "service_terms": ["physical therapy", "outpatient physical therapy", "therapeutic exercise", "rehabilitative services"],
+    "manual_reviewed": true
+  },
+  {
+    "source_id": "cms_lcd_outpatient_physical_occupational_therapy_l33631",
+    "source_type": "CMS_LCD",
+    "title": "LCD - Outpatient Physical and Occupational Therapy Services (L33631)",
+    "local_path": "curated_sources/LCD - Outpatient Physical and Occupational Therapy Services (L33631).txt",
+    "url": "https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?LCDId=33631",
+    "citation_label": "CMS Local Coverage Determination L33631",
+    "insurer": null,
+    "effective_date": null,
+    "codes": ["97110"],
+    "diagnosis_codes": [],
+    "condition_terms": ["tibial fracture", "injury", "functional impairment"],
+    "service_terms": ["physical therapy", "occupational therapy", "outpatient therapy", "rehabilitative therapy"],
+    "manual_reviewed": true
+  },
+  {
+    "source_id": "cms_medicare_benefit_policy_manual_chapter_15",
+    "source_type": "CMS_MANUAL",
+    "title": "Medicare Benefit Policy Manual, Chapter 15 - Covered Medical and Other Health Services",
+    "local_path": "curated_sources/CMS Medicare Benefit-Policy Manual-Chapter15.txt",
+    "url": "https://www.cms.gov/Medicare/Prevention/PrevntionGenInfo/Downloads/bp102c15.pdf",
+    "citation_label": "CMS Medicare Benefit Policy Manual, Chapter 15",
+    "insurer": null,
+    "effective_date": null,
+    "codes": ["97110"],
+    "diagnosis_codes": [],
+    "condition_terms": ["tibial fracture", "injury", "functional impairment"],
+    "service_terms": ["physical therapy", "outpatient rehabilitation therapy", "therapeutic exercise", "medical necessity"],
+    "manual_reviewed": true
+  }
+]
