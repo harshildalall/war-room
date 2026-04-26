@@ -1,0 +1,111 @@
+{
+  "denial_intake": {
+    "case_id": "CC-2026-003",
+    "insurer": "Humana Medicare Advantage",
+    "plan_id": "HUM-MA-HMO-2026-FL",
+    "member_id": "HUM-552014897",
+    "denied_procedure_codes": ["J9999", "96413"],
+    "diagnosis_codes": ["C34.91", "C78.7"],
+    "denial_reason_text": "The requested treatment is considered investigational and experimental for the indicated diagnosis. There is no National Coverage Determination establishing coverage, and the use of this agent for this indication is not FDA-approved. Per plan provisions and Medicare coverage rules, services that are investigational and experimental are not covered.",
+    "denial_reason_category": "investigational_or_experimental",
+    "denial_date": "2026-04-10",
+    "appeal_deadline": "2026-06-09",
+    "appeal_level": "first_internal",
+    "treating_physician": "Dr. Priya Raman, MD (Medical Oncology, Sunshine Cancer Center)",
+    "service_dates": ["2026-04-15"],
+    "confidence_score": 0.91
+  },
+  "personal_evidence": {
+    "case_id": "CC-2026-003",
+    "symptoms": [
+      "metastatic non-small cell lung cancer with hepatic involvement",
+      "ECOG performance status 1, declining toward 2",
+      "weight loss of 6 kg over prior 3 months",
+      "intermittent dyspnea on exertion"
+    ],
+    "treatment_history": [
+      {"date": "2025-08-04", "event": "Initial diagnosis: stage IV NSCLC, KRAS G12C mutation, PD-L1 TPS 15%"},
+      {"date": "2025-08-22", "event": "First-line treatment: pembrolizumab + carboplatin + pemetrexed"},
+      {"date": "2025-12-10", "event": "Disease progression on imaging; new hepatic lesions"},
+      {"date": "2026-01-15", "event": "Second-line: sotorasib (KRAS G12C inhibitor) initiated"},
+      {"date": "2026-03-28", "event": "Progression on sotorasib; oncologist proposes off-label combination including investigational agent in clinical trial pipeline"}
+    ],
+    "prior_treatment_attempts": [
+      {"line": 1, "regimen": "pembrolizumab/carboplatin/pemetrexed", "duration_months": 4, "outcome": "initial partial response, then progression"},
+      {"line": 2, "regimen": "sotorasib monotherapy", "duration_months": 2.5, "outcome": "progression"}
+    ],
+    "treating_physician_statement": "Patient is a 72-year-old with progressive metastatic NSCLC who has exhausted standard FDA-approved second-line options for KRAS G12C-mutated disease. The proposed treatment uses an investigational combination currently in phase II trials. While I believe this represents the patient's best remaining therapeutic option, I acknowledge it is off-label and the supporting evidence is limited to early-phase trial data. — Priya Raman, MD",
+    "evidence_strength_score": 0.35,
+    "gaps_found": [
+      "no FDA approval for this indication",
+      "no published phase III data",
+      "treating oncologist explicitly characterizes as off-label/investigational",
+      "no documentation that patient was offered enrollment in the open clinical trial as an alternative",
+      "no second-opinion oncology consult on file"
+    ]
+  },
+  "external_evidence": {
+    "case_id": "CC-2026-003",
+    "citations": [
+      {
+        "source": "NCCN Clinical Practice Guidelines in Oncology: Non-Small Cell Lung Cancer, v3.2026",
+        "quote": "For patients with KRAS G12C-mutated metastatic NSCLC who progress on sotorasib or adagrasib, options include docetaxel +/- ramucirumab, clinical trial enrollment, or best supportive care. Combination regimens including investigational agents should preferentially be administered within the context of a clinical trial.",
+        "relevance_score": 0.55
+      },
+      {
+        "source": "ASCO Annual Meeting Abstract 9012 (2025) — phase II data on the proposed combination",
+        "quote": "In a single-arm phase II study (n=42), the combination demonstrated an objective response rate of 28% in heavily pretreated KRAS G12C NSCLC. Grade 3+ adverse events occurred in 38% of patients. Larger confirmatory studies are ongoing.",
+        "relevance_score": 0.45
+      },
+      {
+        "source": "Medicare Benefit Policy Manual, CMS Pub 100-02, Chapter 14, §10",
+        "quote": "Items and services that are not reasonable and necessary for the diagnosis or treatment of illness or injury, including items or services that are experimental or investigational, are excluded from Medicare coverage.",
+        "relevance_score": 0.85
+      },
+      {
+        "source": "CMS Coverage with Evidence Development (CED) policy framework",
+        "quote": "Certain promising but unproven items and services may be covered when furnished in the context of an approved clinical study or registry.",
+        "relevance_score": 0.40
+      }
+    ],
+    "guidelines_found": [
+      "NCCN NSCLC Guidelines v3.2026",
+      "ESMO Clinical Practice Guideline: Metastatic NSCLC (2024)"
+    ],
+    "cms_ncd_references": [
+      "No NCD on point",
+      "CMS Pub 100-02 Ch. 14 §10 (investigational/experimental exclusion)",
+      "CMS Coverage with Evidence Development framework (potentially applicable)"
+    ],
+    "evidence_strength_score": 0.30
+  },
+  "contact_actions": {
+    "case_id": "CC-2026-003",
+    "actions_taken": [
+      "Requested letter of medical necessity from Dr. Raman — received (included in personal_evidence)",
+      "Requested any prior insurer approvals for similar off-label combinations — none found in Humana's published policy bulletins",
+      "Searched ClinicalTrials.gov for open trials of the proposed regimen — 2 trials identified at sites within 200 miles of patient",
+      "Requested Humana's medical policy on off-label oncology drugs — received; policy requires NCCN category 1 or 2A recommendation, which this regimen does not have",
+      "Attempted to obtain second-opinion oncology consult — patient declined due to travel burden"
+    ],
+    "supplemental_sources": [
+      {
+        "source": "ClinicalTrials.gov NCT05XXXXXXX and NCT05YYYYYYY",
+        "type": "trial_registry",
+        "result": "Two open trials identified; patient referral feasible but not yet pursued"
+      },
+      {
+        "source": "Humana Medical Coverage Policy: Off-Label Use of Oncology Drugs (2025-11 revision)",
+        "type": "insurer_policy",
+        "result": "Policy explicitly excludes coverage absent NCCN category 1/2A endorsement; the proposed regimen does not meet this threshold"
+      }
+    ],
+    "outreach_status": "complete",
+    "additional_docs_retrieved": [
+      "Dr. Raman letter of medical necessity",
+      "Tumor board notes from 2026-03-30 discussion",
+      "Humana medical coverage policy on off-label oncology drugs",
+      "ClinicalTrials.gov listings for proposed regimen"
+    ]
+  }
+}
