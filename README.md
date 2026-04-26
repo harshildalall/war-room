@@ -1,169 +1,186 @@
-# Clav.ai ⚖️
+# Appeal Strategy Agent
 
-**An AI-powered multi-agent pipeline that reads insurance denial letters and writes back.**
+Part of **Counterclaim**, a multi-agent system that helps Medicare patients
+appeal wrongful insurance denials. This agent ingests a parsed denial case and
+produces a structured appeal strategy: which arguments to make, which evidence
+to gather, deadlines, and the recommended appeal level.
 
-Counterclaim takes a denial intake document, fans out to parallel evidence-gathering agents, synthesizes an appeal strategy, and produces a complete, case-specific appeal letter — all without a human touching a keyboard. It is also deployable as an ASI:One-compatible agent on Fetch.ai's Agentverse.
+The agent is built on the Anthropic Claude SDK (`claude-sonnet-4-6`), wrapped
+in a FastAPI HTTP service.
 
----
-
-## How It Works
-
- 
-```
-  [ Denial Letter ]
-         │
-         ▼
-      Parser                         structures the raw denial document
-         │
-         ▼
-  ┌──────┴──────┐
-  │             │                    ← parallel
-  Personal    External
-  Evidence    Evidence
-  Agent       Agent
-  │             │
-  └──────┬──────┘
-         │
-         ▼
-  Appeal Strategy Agent              synthesizes denial + all evidence
-         │
-         ▼
-   Drafting Agent                    writes the appeal letter
-         │
-         ▼
-  [ Appeal Letter ]
-```
-
-Each agent is an independent FastAPI service. They communicate exclusively via JSON. The orchestrator wires them together end-to-end.
-
----
-
-## Agents & Ports
-
-| Agent | Port | Input | Output |
-|---|---|---|---|
-| `parser` | 8001 | Raw denial document | Structured `denial_intake.json` |
-| `contact_agent` | 8002 | `missing_info_request.json` | Clarifying questions / resolved fields |
-| `personal_evidence_agent` | 8003 | `personal_evidence_task.json` | `personal_evidence.json` |
-| `external_evidence_agent` | 8004 | `external_evidence_task.json` | `external_evidence.json` |
-| `appeal_strategy_agent` | 8005 | `denial_intake.json` + both evidence JSONs | `appeal_strategy.json` |
-| `drafting_agent` | 8006 | `appeal_strategy.json` | Final appeal letter |
-
----
-
-## Fetch.ai / Agentverse Integration
-
-Counterclaim ships with an ASI:One-compatible coordinator at `fetch_agents/counterclaim_coordinator.py`. It implements the mandatory Agent Chat Protocol and exposes the full pipeline as a discoverable Agentverse workflow.
-
-- **ASI1 Chat Session:** https://asi1.ai/shared-chat/d6a13959-1b64-4e1d-b34c-7335ad570468
-- **Agent Profile:** https://agentverse.ai/agents/details/agent1qwv5hzqy6vq4g8srs3d5hjzxjkss9p0tacvmhdkecus8fk55z5rdv6leevj/profile
-
----
-
-## Quickstart
-
-### 1. Clone & set up
-
-Each agent manages its own virtual environment. Run these steps inside the agent folder you're working on:
+## Setup
 
 ```bash
-git clone https://github.com/harshildalall/war-room.git
-cd war-room/<your_agent_folder>
-python3 -m venv .venv
-source .venv/bin/activate
+cd appeal_strategy_agent
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env   # then fill in ANTHROPIC_API_KEY
 ```
 
-### 2. Set your API key
+Requires Python 3.11+.
+
+## Run the API
 
 ```bash
-echo 'ANTHROPIC_API_KEY=sk-ant-your_key_here' > .env
+python -m appeal_strategy.api
+# or:
+uvicorn appeal_strategy.api:app --reload --port 8001
 ```
 
-> Never commit `.env`. It is in `.gitignore` — keep it that way.
+Then `POST` to `http://localhost:8001/strategy`.
 
-### 3. Run your agent
+## Local testing
 
-```bash
-uvicorn main:app --reload --port <YOUR_PORT>
-```
-
-Use the port for your agent from the table above.
-
-### Running the Fetch Coordinator
-
-```bash
-cd war-room
-cp fetch_agents/.env.example fetch_agents/.env
-# Set FETCH_AGENT_SEED to a private seed phrase in fetch_agents/.env
-external_evidence_agent/.venv/bin/python fetch_agents/counterclaim_coordinator.py
-```
-
-Open the Agentverse Inspector URL printed in the terminal to register the agent. Once registered, it accepts direct chat prompts from ASI:One, e.g.:
-
-```
-Run the demo appeal case.
-```
-
----
-
-## JSON Schema Contract
-
-Every JSON message passed between agents **must** include:
+Each case file under `appeal_strategy/tests/test_cases/` bundles the four
+upstream payloads in one JSON object:
 
 ```json
 {
-  "case_id": "string",
-  "schema_version": "string",
-  "status": "string",
-  "provenance": {}
+  "denial_intake":     { "case_id": "...", "...": "..." },
+  "personal_evidence": { "case_id": "...", "...": "..." },
+  "external_evidence": { "case_id": "...", "...": "..." },
+  "contact_actions":   { "case_id": "...", "...": "..." }
 }
 ```
 
-The canonical source of truth for all schemas is `shared/schemas.py`. Do not modify it without announcing the change in the group chat first.
+The harness exits non-zero with a clear message if the file is missing,
+empty, malformed, or missing one of the four top-level keys.
 
----
+### Test cases
 
-## API Contract
+Three realistic Medicare denial scenarios ship in this repo. They are
+designed to span the confidence spectrum so prompt-quality regressions are
+visible.
 
-Every agent must expose:
+| File                    | Case               | Scenario                                                                                | Target confidence |
+|-------------------------|--------------------|-----------------------------------------------------------------------------------------|-------------------|
+| `case_01_input.json`    | `CC-2026-001`      | UHC MA cuts off SNF stay after 19 days post-tibial-fracture in a 91 y/o diabetic; MA-vs-NCD parity, Jimmo, and likely algorithmic review | **strong** ~0.75–0.85 |
+| `case_02_input.json`    | `CC-2026-002`      | Traditional Medicare denies lumbar MRI for 68 y/o after 6 wks failed PT; LCD criteria largely met but physician letter is thin | **moderate** ~0.50–0.60 |
+| `case_03_input.json`    | `CC-2026-003`      | Humana MA denies investigational off-label combo for 72 y/o stage IV NSCLC; no NCD, no NCCN endorsement | **weak** ~0.25–0.35 |
 
-- `POST /run` — accepts the agent's input JSON, returns its output JSON
-- `GET /health` — returns `{"status": "ok"}`
-
----
-
-## Team Rules
-
-- **Never commit `.env`**
-- **Never touch another person's agent folder**
-- **Never modify `shared/schemas.py` without a group chat announcement**
-- Pass JSON between agents — never raw files
-- All JSON output must include `case_id`, `schema_version`, `status`, `provenance`
-
----
-
-## Git Workflow
+### Running a case
 
 ```bash
-git pull origin main        # always pull before starting
-git add .
-git commit -m "feat: your message"
-git push origin main
+# Strong case — should recommend full_overturn with high confidence
+python -m appeal_strategy.tests.test_local appeal_strategy/tests/test_cases/case_01_input.json
+
+# Moderate case — should likely recommend procedural_remand or partial coverage
+python -m appeal_strategy.tests.test_local appeal_strategy/tests/test_cases/case_02_input.json
+
+# Weak case — should output low confidence and flag whether appeal is worth pursuing
+python -m appeal_strategy.tests.test_local appeal_strategy/tests/test_cases/case_03_input.json
+
+# Force a fresh model call (bypass .cache/)
+SKIP_CACHE=1 python -m appeal_strategy.tests.test_local appeal_strategy/tests/test_cases/case_01_input.json
 ```
 
----
+Each run prints the full strategy JSON followed by a short summary line
+(`recommended_remedy`, `confidence_score`, argument count, violation count).
 
-## Sample Inputs
+## API
 
-The `sample_inputs/` directory contains example JSON files for each agent stage. Use these to test your agent in isolation before plugging into the orchestrator.
+### `POST /strategy`
 
----
+Request body — the four upstream agent payloads, each matching their schemas:
 
-## Stack
+```json
+{
+  "denial_intake":     { "case_id": "abc-123", "...": "..." },
+  "personal_evidence": { "case_id": "abc-123", "...": "..." },
+  "external_evidence": { "case_id": "abc-123", "...": "..." },
+  "contact_actions":   { "case_id": "abc-123", "...": "..." }
+}
+```
 
-- **Python 3.11+**
-- **FastAPI** — agent HTTP servers
-- **Anthropic Claude API** — LLM backbone for all reasoning agents
-- **uAgents / Fetch.ai** — Agentverse deployment
-- **Pydantic** — schema validation via `shared/schemas.py`
+Response body:
+
+```json
+{
+  "case_id": "abc-123",
+  "status": "success",
+  "strategy": { "...": "structured strategy from the model tool call" },
+  "normalization_warnings": ["denial_intake.plan_id aliased to plan_id", "..."]
+}
+```
+
+`normalization_warnings` is an empty list when the upstream payload was already
+well-formed. Non-empty means the tolerant parser rewrote one or more fields
+before validation; the strings describe each change (see Architecture below).
+
+### `POST /strategy/validate`
+
+Run the tolerant parser + Pydantic validation only — no model call. Lets
+upstream-agent owners check whether their payload will be accepted and see what
+the parser rewrote, without burning an LLM token.
+
+Request body: same four-payload shape as `POST /strategy`.
+
+Response (valid):
+
+```json
+{
+  "status": "valid",
+  "normalization_warnings": [],
+  "normalized_input": { "...": "..." }
+}
+```
+
+Response (invalid):
+
+```json
+{
+  "status": "invalid",
+  "normalization_warnings": [],
+  "invalid_fields": ["denial_intake.appeal_deadline"],
+  "errors": [ { "...": "Pydantic error detail" } ],
+  "normalized_input": { "...": "..." }
+}
+```
+
+### `GET /health`
+
+Returns `{"status": "ok"}`.
+
+## Architecture
+
+- **Tolerant parser** — before Pydantic validation, `parse_input()` normalizes
+  upstream schema drift: `null` → empty list/string, singleton string → list,
+  stringified numbers → float, field aliases (e.g. `procedure_codes` →
+  `denied_procedure_codes`). Every rewrite is logged and returned in
+  `normalization_warnings` so it is visible which upstream agent is sending
+  loose data.
+- **Inputs** — four payloads from upstream agents: `denial_intake` (parser),
+  `personal_evidence`, `external_evidence`, `contact_actions`. Each is wrapped
+  in its own XML tag inside the user message so the model can address them
+  individually.
+- **Output** — a structured strategy object whose schema is defined in
+  `appeal_strategy/prompts/strategy_tool.json`. The model is forced to emit
+  this shape via Anthropic tool use with
+  `tool_choice={"type":"tool", "name":"submit_strategy"}`.
+- **System prompt** — `appeal_strategy/prompts/system_prompt.txt`, sent with
+  `cache_control: {"type": "ephemeral"}` so repeat calls within the cache TTL
+  pay reduced input-token cost.
+- **Response cache** — every successful call is written to
+  `.cache/<md5(all four inputs)>.json`. Re-running the same case is free.
+  Bypass by setting `SKIP_CACHE=1`.
+
+## Layout
+
+```
+appeal_strategy_agent/
+├── appeal_strategy/
+│   ├── api.py              # FastAPI app, POST /strategy + /strategy/validate
+│   ├── strategy_engine.py  # Claude call + caching + forced tool output
+│   ├── prompts/
+│   │   ├── system_prompt.txt
+│   │   └── strategy_tool.json
+│   └── tests/
+│       ├── test_local.py
+│       └── test_cases/
+├── .cache/                 # MD5-keyed response cache (git-ignored)
+├── outputs/                # Generated strategy + trace JSON (git-ignored)
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
