@@ -96,15 +96,12 @@ const AGENTS = [
   },
   {
     id: "personal", num: "3a", name: "Personal Evidence",
-    tagline: "Finding your strongest facts",
+    tagline: "Loaded from intake",
     color: "var(--amber)", lightColor: "var(--amber-light)",
     steps: [
-      "Reading medical records…",
-      "Found: 3-day qualifying hospital stay",
-      "Found: physician documented daily skilled care need",
-      "Found: comorbid diabetes (complicates healing)",
-      "No prior PT documentation — flagged",
-      "✓ Complete — 4 supporting facts",
+      "Using parsed patient facts…",
+      "No separate personal-evidence worker needed",
+      "✓ Complete — carried forward intake facts",
     ]
   },
   {
@@ -606,6 +603,14 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
         setFactsCount(c => c + factBumps[ai]);
         setEvidenceCount(c => c + evidBumps[ai]);
       }]);
+      if (ai === 1) {
+        time += 160;
+        schedule.push([time, () => {
+          setAgentLines(prev => { const n=[...prev]; n[2]=AGENTS[2].steps.length; return n; });
+          setAgentDone(prev => { const n=[...prev]; n[2]=true; return n; });
+          setFactsCount(c => Math.max(c, 4));
+        }]);
+      }
       // Add citations for agents 3b and 4
       if (ai === 3) {
         CITS.slice(0,3).forEach((c, ci) => {
@@ -652,6 +657,11 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
     };
     const done = Array(5).fill(false);
     const lines = Array(5).fill(0);
+    const personalLoaded = jobEvents.some(event => event.step === "seed_golden_artifacts");
+    if (personalLoaded) {
+      done[2] = true;
+      lines[2] = AGENTS[2].steps.length;
+    }
     let active = 0;
     let facts = 0;
     let evidence = 0;
@@ -714,6 +724,17 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
                 <div style={{ height: 6, borderRadius: 3, background: agentDone[ai] ? agent.color : agentPhase === ai ? 'oklch(35% 0.04 255)' : 'var(--war-panel)', transition: 'background 0.5s', overflow: 'hidden', position: 'relative' }}>
                   {agentPhase === ai && !agentDone[ai] && (
                     <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(90deg, transparent, ${agent.color}55, transparent)`, backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }}></div>
+                  )}
+                  {agentPhase === ai && !agentDone[ai] && (
+                    <div style={{
+                      position: 'absolute', top: -4, left: '50%',
+                      width: 14, height: 14, borderRadius: '50%',
+                      border: `2px solid ${agent.color}`,
+                      borderTopColor: 'transparent',
+                      background: 'var(--war-bg)',
+                      animation: 'spin 0.8s linear infinite',
+                      boxShadow: `0 0 12px ${agent.color}`,
+                    }}></div>
                   )}
                 </div>
                 <div style={{ fontSize: 9, color: agentDone[ai] ? agent.color : agentPhase === ai ? 'var(--war-text)' : 'var(--war-dim)', fontWeight: agentPhase === ai || agentDone[ai] ? 600 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{agent.name}</div>
