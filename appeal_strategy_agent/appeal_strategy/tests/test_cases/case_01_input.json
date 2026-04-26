@@ -1,0 +1,122 @@
+{
+  "denial_intake": {
+    "case_id": "CC-2026-001",
+    "insurer": "UnitedHealthcare Medicare Advantage",
+    "plan_id": "AARP-MA-PPO-2026-CA",
+    "member_id": "UHC-887234561",
+    "denied_procedure_codes": ["99308", "99309"],
+    "diagnosis_codes": ["S82.101A", "E11.9", "Z51.89"],
+    "denial_reason_text": "Based on review of submitted clinical documentation, continued skilled nursing facility care is no longer medically necessary. The member has reached a plateau in functional improvement and skilled services are no longer required. Care can be safely transitioned to a lower level of care including home health services.",
+    "denial_reason_category": "no_longer_medically_necessary",
+    "denial_date": "2026-04-03",
+    "appeal_deadline": "2026-06-02",
+    "appeal_level": "first_internal",
+    "treating_physician": "Dr. Helen Smith, MD (Geriatrics, Cedars Bay Medical Group)",
+    "service_dates": ["2026-03-15", "2026-04-03"],
+    "confidence_score": 0.94
+  },
+  "personal_evidence": {
+    "case_id": "CC-2026-001",
+    "symptoms": [
+      "non-weight-bearing right lower extremity per orthopedic protocol",
+      "persistent post-surgical edema and pain (rated 6/10)",
+      "elevated fasting blood glucose (190-240 mg/dL) impairing wound healing",
+      "balance deficits with documented fall risk score of 18/25 (Morse)",
+      "fatigue limiting therapy tolerance to 30 minutes per session"
+    ],
+    "treatment_history": [
+      {"date": "2026-03-12", "event": "ORIF of right tibial plateau fracture at Cedars Bay Hospital"},
+      {"date": "2026-03-15", "event": "Admitted to Pacific Oaks SNF for post-acute rehabilitation"},
+      {"date": "2026-03-18", "event": "PT/OT initiated, 5x/week; non-weight-bearing precautions"},
+      {"date": "2026-03-25", "event": "Endocrinology consult; insulin regimen adjusted for SNF setting"},
+      {"date": "2026-04-01", "event": "Wound care specialist consult for slow incision healing attributed to diabetes"}
+    ],
+    "prior_treatment_attempts": [
+      {
+        "date": "2025-11-08",
+        "attempt": "Discharged home after prior left wrist fracture without SNF stay",
+        "outcome": "Re-injury within 9 days due to inability to safely manage ADLs alone; readmitted for second surgery"
+      }
+    ],
+    "treating_physician_statement": "Patient is a 91-year-old female with insulin-dependent type 2 diabetes who is 22 days post ORIF of a complex right tibial plateau fracture. She remains strictly non-weight-bearing on the right leg per orthopedic protocol for a minimum of 6 weeks post-op. Skilled nursing services remain medically necessary for: (1) daily blood glucose management with sliding-scale insulin, which she cannot self-administer reliably given cognitive fatigue; (2) ongoing wound assessment given diabetic-related healing delay confirmed by wound care specialist; (3) supervised PT to maintain upper-body strength and contralateral lower-extremity conditioning while non-weight-bearing; (4) fall prevention given her documented Morse score of 18 and recent re-injury history after premature home discharge. Discharge to home or home health at this time is contraindicated and would predictably result in re-injury, as occurred after her November 2025 wrist fracture. Estimated additional SNF need: 14-21 days. — Helen Smith, MD",
+    "evidence_strength_score": 0.88,
+    "gaps_found": []
+  },
+  "external_evidence": {
+    "case_id": "CC-2026-001",
+    "citations": [
+      {
+        "source": "Medicare Benefit Policy Manual, CMS Pub 100-02, Chapter 8, §30.2",
+        "quote": "Skilled care may be necessary to improve a patient's current condition, to maintain the patient's current condition, or to prevent or slow further deterioration of the patient's condition.",
+        "relevance_score": 0.95
+      },
+      {
+        "source": "Jimmo v. Sebelius Settlement Agreement (2013), reaffirmed by CMS Transmittal 179 (2014)",
+        "quote": "Coverage of skilled nursing and skilled therapy services does not turn on the presence or absence of a beneficiary's potential for improvement, but rather on the beneficiary's need for skilled care.",
+        "relevance_score": 0.92
+      },
+      {
+        "source": "42 CFR §422.101(b)(2)",
+        "quote": "An MA plan must provide coverage of, by furnishing, arranging for, or making payment for, all services that are covered by Part A and Part B of Medicare ... and must comply with CMS's National Coverage Determinations.",
+        "relevance_score": 0.90
+      },
+      {
+        "source": "CMS Final Rule CMS-4201-F (effective January 1, 2024), 88 FR 22120",
+        "quote": "MA organizations may not use internal coverage criteria that are more restrictive than traditional Medicare coverage criteria, and must base medical necessity determinations on the circumstances of the specific individual.",
+        "relevance_score": 0.94
+      },
+      {
+        "source": "UnitedHealthcare Medicare Advantage Coverage Summary: Skilled Nursing Facility Services (2026 edition)",
+        "quote": "Continued SNF coverage is appropriate when the member requires daily skilled nursing or rehabilitation services that, as a practical matter, can only be provided in a SNF, including patients with comorbid conditions such as diabetes mellitus that complicate post-orthopedic recovery.",
+        "relevance_score": 0.86
+      },
+      {
+        "source": "Estate of Lokken v. UnitedHealth Group, Case No. 0:23-cv-03514 (D. Minn. 2023)",
+        "quote": "Plaintiffs allege that UnitedHealthcare's nH Predict algorithm systematically denies and prematurely terminates post-acute care coverage in violation of Medicare coverage rules and the Jimmo settlement.",
+        "relevance_score": 0.78
+      }
+    ],
+    "guidelines_found": [
+      "American Academy of Orthopaedic Surgeons (AAOS) post-op tibial plateau fracture rehabilitation protocol — non-weight-bearing 6-8 weeks",
+      "American Diabetes Association Standards of Care 2026 §16: post-surgical glycemic management requires daily skilled monitoring",
+      "American Geriatrics Society Beers Criteria — falls risk management in post-fracture geriatric patients"
+    ],
+    "cms_ncd_references": [
+      "CMS Pub 100-02 Ch. 8 §30 (SNF skilled care criteria)",
+      "CMS Transmittal 179 (Jimmo implementation)",
+      "CMS-4201-F (MA coverage criteria parity)"
+    ],
+    "evidence_strength_score": 0.91
+  },
+  "contact_actions": {
+    "case_id": "CC-2026-001",
+    "actions_taken": [
+      "Requested complete medical records from Pacific Oaks SNF — received",
+      "Requested operative report and post-op orders from Cedars Bay Hospital — received",
+      "Requested letter of medical necessity from Dr. Smith — received and included in personal_evidence",
+      "Requested UnitedHealthcare's algorithmic review documentation under 42 CFR §422.568(f) — pending response (request submitted 2026-04-08, 30-day deadline 2026-05-08)",
+      "Searched CMS appeals database for similar nH Predict-related reversals at redetermination — 14 favorable matches identified"
+    ],
+    "supplemental_sources": [
+      {
+        "source": "STAT News investigation, 'UnitedHealth uses AI model with 90% error rate to deny care' (2023-11-14)",
+        "type": "investigative_journalism",
+        "result": "Cited contextually; not used as primary evidence"
+      },
+      {
+        "source": "Senate Permanent Subcommittee on Investigations report, 'Refusal of Recovery' (October 2024)",
+        "type": "government_report",
+        "result": "Documents UnitedHealthcare's elevated post-acute denial rates relative to traditional Medicare"
+      }
+    ],
+    "outreach_status": "complete_with_one_pending",
+    "additional_docs_retrieved": [
+      "Pacific Oaks SNF nursing flow sheets (2026-03-15 to 2026-04-03)",
+      "Pacific Oaks SNF PT/OT progress notes",
+      "Cedars Bay Hospital operative report (2026-03-12)",
+      "Wound care consult note (2026-04-01)",
+      "Endocrinology consult note (2026-03-25)",
+      "Patient's November 2025 readmission discharge summary (prior failed home discharge)"
+    ]
+  }
+}
