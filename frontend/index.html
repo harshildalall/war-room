@@ -270,6 +270,16 @@ function getLiveVerification(caseResult) {
   return caseResult?.pipeline_result?.verification_status || caseResult?.verification_report?.status || 'demo';
 }
 
+function buildUserPreferences(remedy) {
+  if (!remedy) return {};
+  return {
+    desired_outcome: remedy.id,
+    desired_outcome_label: remedy.label,
+    desired_timeline: remedy.timeline,
+    user_selected_reason: remedy.primary,
+  };
+}
+
 // ── COMPONENTS ───────────────────────────────────────────────────────────────
 
 function Logo({ dark }) {
@@ -469,7 +479,7 @@ function Upload({ onNext }) {
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
         <div style={{ display: 'flex', gap: 8, marginBottom: 40, alignItems: 'center' }}>
-          {['Upload docs', 'Review case', 'Strategy', 'Your letter'].map((s, i) => (
+          {['Upload docs', 'Outcome', 'Analysis', 'Your letter'].map((s, i) => (
             <React.Fragment key={s}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', background: i === 0 ? 'var(--blue)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -505,7 +515,7 @@ function Upload({ onNext }) {
                 ) : (
                   <div
                     onClick={() => denialInputRef.current?.click()}
-                    style={{ padding: '28px', border: '2px dashed var(--border)', borderRadius: 14, textAlign: 'center', cursor: 'pointer', background: 'var(--bg)', transition: 'all 0.2s', maxWidth: 440, margin: '0 auto' }}
+                    style={{ padding: '28px', border: '2px dashed var(--border)', borderRadius: 14, textAlign: 'center', cursor: 'pointer', background: 'var(--bg)', transition: 'all 0.2s', maxWidth: 520, margin: '0 auto', transform: 'translateX(-24px)' }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--blue)'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                   >
@@ -550,7 +560,7 @@ function Upload({ onNext }) {
 }
 
 // ── SCREEN 3: WAR ROOM ───────────────────────────────────────────────────────
-function WarRoom({ onNext, backendRunning, backendStatus }) {
+function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
   const [agentPhase, setAgentPhase] = useState(0); // which agent is active
   const [agentLines, setAgentLines] = useState(Array(5).fill(0)); // lines shown per agent
   const [agentDone, setAgentDone] = useState(Array(5).fill(false));
@@ -576,6 +586,7 @@ function WarRoom({ onNext, backendRunning, backendStatus }) {
 
   useEffect(() => {
     const schedule = [];
+    if (backendRunning || jobEvents.length > 0) return undefined;
     let time = 600;
     AGENTS.forEach((agent, ai) => {
       // Start agent
@@ -615,7 +626,59 @@ function WarRoom({ onNext, backendRunning, backendStatus }) {
 
     const timers = schedule.map(([delay, fn]) => setTimeout(fn, delay));
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [backendRunning, jobEvents.length]);
+
+  useEffect(() => {
+    if (!jobEvents.length) return;
+    const stepToAgent = {
+      seed_golden_artifacts: 0,
+      contact_agent: 1,
+      external_evidence_agent: 3,
+      appeal_strategy_input: 4,
+      appeal_strategy_agent: 4,
+      drafting_agent_letter: 4,
+      drafting_agent_packet: 4,
+      verification: 4,
+    };
+    const labels = {
+      seed_golden_artifacts: "Loaded parsed denial and patient facts",
+      contact_agent: "Contact agent prepared missing-information requests",
+      external_evidence_agent: "External evidence agent returned citation-backed policy evidence",
+      appeal_strategy_input: "Normalized strategy input contract",
+      appeal_strategy_agent: "Appeal strategy generated argument chain",
+      drafting_agent_letter: "Drafting agent produced appeal letter",
+      drafting_agent_packet: "Final appeal packet assembled",
+      verification: "Citation verification report generated",
+    };
+    const done = Array(5).fill(false);
+    const lines = Array(5).fill(0);
+    let active = 0;
+    let facts = 0;
+    let evidence = 0;
+
+    jobEvents.forEach(event => {
+      const index = stepToAgent[event.step];
+      if (index === undefined) return;
+      active = index;
+      done[index] = event.status !== "running";
+      lines[index] = Math.max(lines[index], Math.min(AGENTS[index].steps.length, 2 + (event.notes?.length || 0)));
+      if (event.step === "seed_golden_artifacts") facts = Math.max(facts, 4);
+      if (event.step === "external_evidence_agent") evidence = Math.max(evidence, 5);
+    });
+
+    setAgentPhase(active);
+    setAgentDone(done);
+    setAgentLines(lines);
+    setFactsCount(facts);
+    setEvidenceCount(evidence);
+    setDoneCount(done.filter(Boolean).length);
+    setShowNext(!backendRunning && jobEvents.some(event => event.step === "verification"));
+    setCitFeed(jobEvents.slice(-6).map(event => ({
+      src: event.step.replace(/_/g, " "),
+      text: labels[event.step] || event.status,
+      type: event.status === "failed" ? "case_law" : "federal_policy",
+    })));
+  }, [jobEvents, backendRunning]);
 
   const citColors = { federal_policy: 'var(--blue)', local_coverage: 'oklch(60% 0.18 290)', precedent: 'var(--amber)', case_law: 'var(--red)', insurer_bulletin: 'var(--green)' };
 
@@ -756,15 +819,16 @@ function WarRoom({ onNext, backendRunning, backendStatus }) {
 // ── SCREEN 4: REMEDY ─────────────────────────────────────────────────────────
 function Remedy({ onNext }) {
   const [selected, setSelected] = useState(null);
+  const selectedRemedy = REMEDIES.find(r => r.id === selected);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
       <nav style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', background: 'white' }}>
         <Logo />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {['Upload docs', 'War room', 'Strategy', 'Your letter'].map((s, i) => (
+          {['Upload docs', 'Outcome', 'Analysis', 'Your letter'].map((s, i) => (
             <React.Fragment key={s}>
-              <span style={{ fontSize: 13, fontWeight: i===2 ? 700 : 400, color: i <= 2 ? 'var(--text)' : 'var(--text2)', padding: '4px 10px', borderRadius: 20, background: i===2 ? 'var(--blue-light)' : 'transparent', color: i===2 ? 'var(--blue)' : i < 2 ? 'var(--green)' : 'var(--text2)' }}>{i < 2 ? '✓ ' : ''}{s}</span>
+              <span style={{ fontSize: 13, fontWeight: i===1 ? 700 : 400, color: i <= 1 ? 'var(--text)' : 'var(--text2)', padding: '4px 10px', borderRadius: 20, background: i===1 ? 'var(--blue-light)' : 'transparent', color: i===1 ? 'var(--blue)' : i < 1 ? 'var(--green)' : 'var(--text2)' }}>{i < 1 ? '✓ ' : ''}{s}</span>
               {i < 3 && <span style={{ color: 'var(--border)' }}>›</span>}
             </React.Fragment>
           ))}
@@ -776,7 +840,7 @@ function Remedy({ onNext }) {
           <Tag label="Step 3 of 4" color="var(--blue)" />
         </div>
         <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 44, marginBottom: 10 }}>What outcome do you want?</h1>
-        <p style={{ fontSize: 17, color: 'var(--text2)', marginBottom: 48, lineHeight: 1.6, maxWidth: 560 }}>We've built 3 strategies, each with different tradeoffs. The recommended option has the best chance of winning full coverage.</p>
+        <p style={{ fontSize: 17, color: 'var(--text2)', marginBottom: 48, lineHeight: 1.6, maxWidth: 560 }}>Choose the outcome you care about most. We pass this preference into the backend before the strategy agent builds the appeal.</p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 48 }}>
           {REMEDIES.map(r => (
@@ -820,8 +884,8 @@ function Remedy({ onNext }) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Btn onClick={selected ? onNext : undefined} variant="blue" size="lg" disabled={!selected}>
-            Build My Appeal Letter →
+          <Btn onClick={selectedRemedy ? () => onNext(selectedRemedy) : undefined} variant="blue" size="lg" disabled={!selectedRemedy}>
+            Run Appeal Agents →
           </Btn>
         </div>
       </div>
@@ -1065,6 +1129,8 @@ function App() {
   const [caseResult, setCaseResult] = useState(null);
   const [backendRunning, setBackendRunning] = useState(false);
   const [backendStatus, setBackendStatus] = useState(null);
+  const [jobEvents, setJobEvents] = useState([]);
+  const [selectedRemedy, setSelectedRemedy] = useState(null);
 
   useEffect(() => {
     apiJson('/api/latest')
@@ -1072,14 +1138,33 @@ function App() {
       .catch(() => {});
   }, []);
 
-  async function startAnalysis() {
+  async function startAnalysis(remedy) {
+    setSelectedRemedy(remedy);
     setScreen('warroom');
     setBackendRunning(true);
+    setJobEvents([]);
     setBackendStatus({ type: 'info', message: 'Running real Counterclaim backend agents…' });
     try {
-      const result = await apiJson('/api/run-demo', { method: 'POST' });
-      setCaseResult(result);
-      setBackendStatus({ type: 'success', message: 'Backend appeal packet generated from live agent artifacts.' });
+      const job = await apiJson('/api/run-demo-job', {
+        method: 'POST',
+        body: JSON.stringify({ user_preferences: buildUserPreferences(remedy) }),
+      });
+      let finalJob = job;
+      while (finalJob.status === 'queued' || finalJob.status === 'running') {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        finalJob = await apiJson(`/api/jobs/${job.job_id}`);
+        setJobEvents(finalJob.events || []);
+        const latest = finalJob.latest_event;
+        if (latest) {
+          setBackendStatus({ type: 'info', message: `${latest.step.replace(/_/g, ' ')}: ${latest.status}` });
+        }
+      }
+      if (finalJob.status === 'success') {
+        setCaseResult(finalJob.result);
+        setBackendStatus({ type: 'success', message: 'Backend appeal packet generated from live agent artifacts.' });
+      } else {
+        throw new Error(finalJob.error || 'Backend job failed.');
+      }
     } catch (err) {
       console.error(err);
       setBackendStatus({ type: 'error', message: `Backend run failed: ${err.message}. Showing latest generated demo artifacts.` });
@@ -1094,9 +1179,9 @@ function App() {
 
   const screens = {
     landing: <Landing onNext={() => setScreen('upload')} onSignIn={() => setScreen('profile')} />,
-    upload: <Upload onNext={startAnalysis} />,
-    warroom: <WarRoom onNext={() => setScreen('remedy')} backendRunning={backendRunning} backendStatus={backendStatus} />,
-    remedy: <Remedy onNext={() => setScreen('letter')} />,
+    upload: <Upload onNext={() => setScreen('remedy')} />,
+    remedy: <Remedy onNext={startAnalysis} />,
+    warroom: <WarRoom onNext={() => setScreen('letter')} backendRunning={backendRunning} backendStatus={backendStatus} jobEvents={jobEvents} />,
     letter: <Letter onHistory={() => setScreen('history')} onProfile={() => setScreen('profile')} caseResult={caseResult} />,
     history: <History onNew={() => setScreen('landing')} onProfile={() => setScreen('profile')} />,
     profile: <Profile onBack={() => setScreen('history')} onNewCase={() => setScreen('landing')} />,
