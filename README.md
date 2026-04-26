@@ -1,86 +1,175 @@
-# Counterclaim
+# Counterclaim ⚖️
 
-## Fetch.ai / Agentverse
+**An AI-powered multi-agent pipeline that reads insurance denial letters and writes back.**
 
-Counterclaim includes an ASI:One-compatible Fetch/uAgents coordinator at
-`fetch_agents/counterclaim_coordinator.py`.
+Counterclaim takes a denial intake document, fans out to parallel evidence-gathering agents, synthesizes an appeal strategy, and produces a complete, case-specific appeal letter — all without a human touching a keyboard. It is also deployable as an ASI:One-compatible agent on Fetch.ai's Agentverse.
 
-This agent implements the mandatory Agent Chat Protocol and exposes the local
-Counterclaim pipeline as an executable agent workflow. A user can ask it to run
-the demo appeal case, or provide full case JSON matching the orchestrator schema.
+---
 
-### Deliverables
+## How It Works
 
-- ASI1 Chat Session: https://asi1.ai/shared-chat/d6a13959-1b64-4e1d-b34c-7335ad570468
-- Agent Profile: https://agentverse.ai/agents/details/agent1qwv5hzqy6vq4g8srs3d5hjzxjkss9p0tacvmhdkecus8fk55z5rdv6leevj/profile
-
-### Run the Fetch Coordinator
-
-```bash
-cd war-room
-cp fetch_agents/.env.example fetch_agents/.env
-# Edit fetch_agents/.env and set FETCH_AGENT_SEED to a private seed phrase.
-external_evidence_agent/.venv/bin/python fetch_agents/counterclaim_coordinator.py
+```
+                        ┌─────────────────────────────────────────────────┐
+                        │                  Orchestrator                   │
+                        └────────────────────┬────────────────────────────┘
+                                             │
+                   ┌─────────────────────────▼─────────────────────────┐
+                   │                       Parser                       │
+                   │            (parses denial / case document)         │
+                   └──────────────┬────────────────────────────────────┘
+                                  │
+            ┌─────────────────────┼──────────────────────┐
+            │                     │                      │
+    ┌───────▼──────┐   ┌──────────▼─────────┐   ┌───────▼──────────────┐
+    │ Contact Agent│   │Personal Evidence   │   │External Evidence     │
+    │ (missing info│   │Agent               │   │Agent                 │
+    │  requests)   │   │(patient history,   │   │(clinical guidelines, │
+    └──────────────┘   │ records)           │   │ precedents)          │
+                       └──────────┬─────────┘   └───────┬──────────────┘
+                                  │                      │
+                       ┌──────────▼──────────────────────▼──────────────┐
+                       │              Appeal Strategy Agent              │
+                       │    (denial + personal evidence + external       │
+                       │     evidence → structured appeal strategy)      │
+                       └──────────────────────┬──────────────────────────┘
+                                              │
+                                   ┌──────────▼──────────┐
+                                   │    Drafting Agent   │
+                                   │  (final appeal      │
+                                   │   letter output)    │
+                                   └─────────────────────┘
 ```
 
-Open the Agentverse Inspector URL printed in the terminal and connect/register
-the agent with Agentverse. The agent is intended to be discoverable from ASI:One
-through Agentverse and supports direct chat requests such as:
+Each agent is an independent FastAPI service. They communicate exclusively via JSON. The orchestrator wires them together end-to-end.
 
-```text
-Run the demo appeal case.
-```
+---
 
-Payment Protocol is not required for this MVP and is not enabled.
+## Agents & Ports
 
-## Setup (every teammate does this once)
+| Agent | Port | Input | Output |
+|---|---|---|---|
+| `parser` | 8001 | Raw denial document | Structured `denial_intake.json` |
+| `contact_agent` | 8002 | `missing_info_request.json` | Clarifying questions / resolved fields |
+| `personal_evidence_agent` | 8003 | `personal_evidence_task.json` | `personal_evidence.json` |
+| `external_evidence_agent` | 8004 | `external_evidence_task.json` | `external_evidence.json` |
+| `appeal_strategy_agent` | 8005 | `denial_intake.json` + both evidence JSONs | `appeal_strategy.json` |
+| `drafting_agent` | 8006 | `appeal_strategy.json` | Final appeal letter |
+
+---
+
+## Fetch.ai / Agentverse Integration
+
+Counterclaim ships with an ASI:One-compatible coordinator at `fetch_agents/counterclaim_coordinator.py`. It implements the mandatory Agent Chat Protocol and exposes the full pipeline as a discoverable Agentverse workflow.
+
+- **ASI1 Chat Session:** https://asi1.ai/shared-chat/d6a13959-1b64-4e1d-b34c-7335ad570468
+- **Agent Profile:** https://agentverse.ai/agents/details/agent1qwv5hzqy6vq4g8srs3d5hjzxjkss9p0tacvmhdkecus8fk55z5rdv6leevj/profile
+
+---
+
+## Quickstart
+
+### 1. Clone & set up
+
+Each agent manages its own virtual environment. Run these steps inside the agent folder you're working on:
+
 ```bash
 git clone https://github.com/harshildalall/war-room.git
-cd war-room
-cd your_agent_folder
+cd war-room/<your_agent_folder>
 python3 -m venv .venv
 source .venv/bin/activate
-pip3 install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-## Create your .env file (never commit this)
+### 2. Set your API key
+
 ```bash
 echo 'ANTHROPIC_API_KEY=sk-ant-your_key_here' > .env
 ```
 
-## Run your agent
+> Never commit `.env`. It is in `.gitignore` — keep it that way.
+
+### 3. Run your agent
+
 ```bash
-uvicorn main:app --reload --port YOUR_PORT
+uvicorn main:app --reload --port <YOUR_PORT>
 ```
 
-## Ports
-- parser: 8001
-- contact_agent: 8002
-- personal_evidence_agent: 8003
-- external_evidence_agent: 8004
-- appeal_strategy_agent: 8005
-- drafting_agent: 8006
+Use the port for your agent from the table above.
 
-## Rules
-- Never commit .env
-- Never touch another person's folder
-- Never change shared/schemas.py without announcing in group chat
-- Every JSON output needs case_id, schema_version, status, provenance
-- Pass JSON between agents, never raw files
-- Your endpoint must be POST /run
-- GET /health must return {"status": "ok"}
+### Running the Fetch Coordinator
 
-## Input each agent receives
-- contact_agent: missing_info_request.json
-- personal_evidence_agent: personal_evidence_task.json
-- external_evidence_agent: external_evidence_task.json
-- appeal_strategy_agent: denial_intake.json + personal_evidence.json + external_evidence.json
-- drafting_agent: appeal_strategy.json
-
-## Git workflow
 ```bash
-git pull origin main   # before starting work
+cd war-room
+cp fetch_agents/.env.example fetch_agents/.env
+# Set FETCH_AGENT_SEED to a private seed phrase in fetch_agents/.env
+external_evidence_agent/.venv/bin/python fetch_agents/counterclaim_coordinator.py
+```
+
+Open the Agentverse Inspector URL printed in the terminal to register the agent. Once registered, it accepts direct chat prompts from ASI:One, e.g.:
+
+```
+Run the demo appeal case.
+```
+
+---
+
+## JSON Schema Contract
+
+Every JSON message passed between agents **must** include:
+
+```json
+{
+  "case_id": "string",
+  "schema_version": "string",
+  "status": "string",
+  "provenance": {}
+}
+```
+
+The canonical source of truth for all schemas is `shared/schemas.py`. Do not modify it without announcing the change in the group chat first.
+
+---
+
+## API Contract
+
+Every agent must expose:
+
+- `POST /run` — accepts the agent's input JSON, returns its output JSON
+- `GET /health` — returns `{"status": "ok"}`
+
+---
+
+## Team Rules
+
+- **Never commit `.env`**
+- **Never touch another person's agent folder**
+- **Never modify `shared/schemas.py` without a group chat announcement**
+- Pass JSON between agents — never raw files
+- All JSON output must include `case_id`, `schema_version`, `status`, `provenance`
+
+---
+
+## Git Workflow
+
+```bash
+git pull origin main        # always pull before starting
 git add .
 git commit -m "feat: your message"
 git push origin main
 ```
+
+---
+
+## Sample Inputs
+
+The `sample_inputs/` directory contains example JSON files for each agent stage. Use these to test your agent in isolation before plugging into the orchestrator.
+
+---
+
+## Stack
+
+- **Python 3.11+**
+- **FastAPI** — agent HTTP servers
+- **Anthropic Claude API** — LLM backbone for all reasoning agents
+- **uAgents / Fetch.ai** — Agentverse deployment
+- **Pydantic** — schema validation via `shared/schemas.py`
