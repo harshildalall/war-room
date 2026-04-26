@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import json
 import sys
+import threading
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -28,6 +30,8 @@ from orchestrator.run_pipeline import load_json, run_pipeline
 load_dotenv(REPO_ROOT / "external_evidence_agent" / ".env")
 
 app = FastAPI(title="Counterclaim Demo Backend")
+JOBS: dict[str, dict[str, Any]] = {}
+JOBS_LOCK = threading.Lock()
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -56,6 +60,47 @@ def build_case_payload(case_id: str) -> dict[str, Any]:
     }
 
 
+def demo_case_with_preferences(preferences: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = load_json(DEFAULT_CASE_PATH)
+    if preferences:
+        payload["user_preferences"] = preferences
+    return payload
+
+
+def set_job(job_id: str, **updates: Any) -> None:
+    with JOBS_LOCK:
+        current = JOBS.setdefault(job_id, {})
+        current.update(updates)
+
+
+def append_job_event(job_id: str, event: dict[str, Any]) -> None:
+    with JOBS_LOCK:
+        current = JOBS.setdefault(job_id, {})
+        current.setdefault("events", []).append(event)
+        current["latest_event"] = event
+
+
+def run_job(job_id: str, preferences: dict[str, Any] | None = None) -> None:
+    set_job(job_id, status="running", result=None, error=None)
+    try:
+        result = run_pipeline(
+            demo_case_with_preferences(preferences),
+            status_callback=lambda event: append_job_event(job_id, event),
+        )
+        set_job(job_id, status="success", result=build_case_payload(result["case_id"]))
+    except Exception as exc:
+        append_job_event(
+            job_id,
+            {
+                "step": "pipeline",
+                "status": "failed",
+                "artifact": None,
+                "notes": [f"{type(exc).__name__}: {exc}"],
+            },
+        )
+        set_job(job_id, status="failed", error=f"{type(exc).__name__}: {exc}")
+
+
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(FRONTEND_DIR / "index.html")
@@ -67,9 +112,38 @@ def tweaks_panel() -> FileResponse:
 
 
 @app.post("/api/run-demo")
-def run_demo() -> dict[str, Any]:
-    result = run_pipeline(load_json(DEFAULT_CASE_PATH))
+def run_demo(payload: dict[str, Any] = Body(default={})) -> dict[str, Any]:
+    result = run_pipeline(demo_case_with_preferences(payload.get("user_preferences")))
     return build_case_payload(result["case_id"])
+
+
+@app.post("/api/run-demo-job")
+def run_demo_job(payload: dict[str, Any] = Body(default={})) -> dict[str, Any]:
+    job_id = str(uuid4())
+    with JOBS_LOCK:
+        JOBS[job_id] = {
+            "job_id": job_id,
+            "status": "queued",
+            "events": [],
+            "result": None,
+            "error": None,
+        }
+    thread = threading.Thread(
+        target=run_job,
+        args=(job_id, payload.get("user_preferences")),
+        daemon=True,
+    )
+    thread.start()
+    return {"job_id": job_id, "status": "queued"}
+
+
+@app.get("/api/jobs/{job_id}")
+def get_job(job_id: str) -> dict[str, Any]:
+    with JOBS_LOCK:
+        job = JOBS.get(job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="Job not found.")
+        return dict(job)
 
 
 @app.get("/api/latest")

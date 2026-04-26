@@ -9,7 +9,7 @@ import sys
 from json import JSONDecodeError
 from datetime import datetime, UTC
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from dotenv import load_dotenv
 
@@ -222,11 +222,20 @@ def fallback_draft(strategy: dict[str, Any], reason: str) -> dict[str, Any]:
     }
 
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN PIPELINE
 # ─────────────────────────────────────────────────────────────────────────────
 
-def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> dict[str, Any]:
+
+StatusCallback = Callable[[dict[str, Any]], None]
+
+
+def run_pipeline(
+    case_input: dict[str, Any],
+    output_root: Path = CASES_DIR,
+    status_callback: StatusCallback | None = None,
+) -> dict[str, Any]:
     load_dotenv(REPO_ROOT / "external_evidence_agent" / ".env")
 
     case_id = ensure_case_id(case_input)
@@ -236,15 +245,16 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
     status_log: list[dict[str, Any]] = []
 
     def record(step: str, status: str, artifact: str | None = None, notes: list[str] | None = None) -> None:
-        status_log.append(
-            {
-                "step": step,
-                "status": status,
-                "artifact": artifact,
-                "notes": notes or [],
-                "timestamp": utc_now(),
-            }
-        )
+        entry = {
+            "step": step,
+            "status": status,
+            "artifact": artifact,
+            "notes": notes or [],
+            "timestamp": utc_now(),
+        }
+        status_log.append(entry)
+        if status_callback is not None:
+            status_callback(entry)
 
     # ── Seed artifacts from golden case input ──────────────────────────────
     write_json(case_dir / "input_case.json", case_input)
@@ -254,17 +264,22 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
     personal_evidence_task = case_input.get("personal_evidence_task", {})
     personal_evidence = case_input["personal_evidence"]
     external_evidence_task = case_input["external_evidence_task"]
+    user_preferences = case_input.get("user_preferences", {})
 
     write_json(artifacts_dir / "denial_intake.json", denial_intake)
     write_json(artifacts_dir / "missing_info_request.json", missing_info_request)
     write_json(artifacts_dir / "personal_evidence_task.json", personal_evidence_task)
     write_json(artifacts_dir / "personal_evidence.json", personal_evidence)
     write_json(artifacts_dir / "external_evidence_task.json", external_evidence_task)
+    if isinstance(user_preferences, dict) and user_preferences:
+        write_json(artifacts_dir / "user_preferences.json", user_preferences)
     record("seed_golden_artifacts", "success", str(artifacts_dir))
 
     # ── Contact agent ──────────────────────────────────────────────────────
     contact_resolved = resolve_missing_info(missing_info_request)
     contact_actions = build_contact_packet(missing_info_request, contact_resolved)
+    if isinstance(user_preferences, dict) and user_preferences:
+        contact_actions["user_preferences"] = user_preferences
     contact_path = artifacts_dir / "contact_actions.json"
     write_json(contact_path, contact_actions)
     record("contact_agent", "success", str(contact_path))
