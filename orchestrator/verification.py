@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-from copy import deepcopy
 from collections import Counter
 from datetime import datetime, UTC
 from typing import Any
@@ -134,26 +133,6 @@ def status_rank(status: str) -> int:
     return order.get(status, 2)
 
 
-def build_verification_root(
-    denial_intake: dict[str, Any],
-    personal_evidence: dict[str, Any],
-    external_evidence: dict[str, Any],
-    contact_actions: dict[str, Any],
-    strategy: dict[str, Any],
-    drafted: dict[str, Any] | None = None,
-    packet: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    return {
-        "denial_intake": denial_intake,
-        "personal_evidence": personal_evidence,
-        "external_evidence": external_evidence.get("data", external_evidence),
-        "contact_actions": contact_actions,
-        "appeal_strategy": strategy,
-        "drafted_letter": drafted or {},
-        "appeal_packet": packet or {},
-    }
-
-
 def verify_strategy_claims(strategy: dict[str, Any], root: dict[str, Any]) -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     for index, argument in enumerate(strategy.get("argument_chain", [])):
@@ -195,151 +174,6 @@ def verify_strategy_claims(strategy: dict[str, Any], root: dict[str, Any]) -> li
             }
         )
     return results
-
-
-def keep_strategy_claim(claim_result: dict[str, Any]) -> bool:
-    return claim_result.get("status") == "traceable"
-
-
-def keep_contract_violation(violation_result: dict[str, Any]) -> bool:
-    return violation_result.get("status") in {"exact_quote", "paraphrase_supported"}
-
-
-def exact_source_quote(root: dict[str, Any], ref: str | None) -> str:
-    ok, resolved, _ = resolve_reference(root, ref or "")
-    return quote_text(resolved) if ok else ""
-
-
-def remap_indices(indices: list[Any], index_map: dict[int, int]) -> list[int]:
-    remapped: list[int] = []
-    for value in indices:
-        if isinstance(value, int) and value in index_map:
-            remapped.append(index_map[value])
-    return remapped
-
-
-def filter_strategy_for_drafting(
-    strategy: dict[str, Any],
-    root: dict[str, Any],
-    strategy_claims: list[dict[str, Any]],
-    contract_violations: list[dict[str, Any]],
-) -> dict[str, Any]:
-    filtered = deepcopy(strategy)
-    original_arguments = strategy.get("argument_chain", [])
-    original_violations = strategy.get("contract_violations", [])
-
-    kept_arguments: list[dict[str, Any]] = []
-    excluded_evidence: list[dict[str, Any]] = []
-    argument_index_map: dict[int, int] = {}
-    claim_results_by_index = {item["claim_index"]: item for item in strategy_claims}
-
-    for old_index, argument in enumerate(original_arguments):
-        result = claim_results_by_index.get(old_index, {"status": "needs_review"})
-        if keep_strategy_claim(result):
-            argument_index_map[old_index] = len(kept_arguments)
-            kept_arguments.append(deepcopy(argument))
-        else:
-            excluded_evidence.append(
-                {
-                    "source_section": "argument_chain",
-                    "original_index": old_index,
-                    "status": result.get("status"),
-                    "reason": "Claim did not pass pre-draft citation verification.",
-                    "removed_item": argument,
-                }
-            )
-
-    kept_violations: list[dict[str, Any]] = []
-    violation_results_by_index = {item["violation_index"]: item for item in contract_violations}
-    for old_index, violation in enumerate(original_violations):
-        result = violation_results_by_index.get(old_index, {"status": "unsupported"})
-        if keep_contract_violation(result):
-            cleaned = deepcopy(violation)
-            source_quote = exact_source_quote(root, cleaned.get("source"))
-            if source_quote:
-                cleaned["verified_quote"] = source_quote
-            cleaned["verification_status"] = result.get("status")
-            kept_violations.append(cleaned)
-        else:
-            excluded_evidence.append(
-                {
-                    "source_section": "contract_violations",
-                    "original_index": old_index,
-                    "status": result.get("status"),
-                    "reason": "Contract violation was weak, unsupported, or had an invalid citation.",
-                    "removed_item": violation,
-                }
-            )
-
-    filtered["argument_chain"] = kept_arguments
-    filtered["contract_violations"] = kept_violations
-    filtered["excluded_evidence"] = excluded_evidence
-    filtered["verification_filter"] = {
-        "applied_at": utc_now(),
-        "arguments_before": len(original_arguments),
-        "arguments_after": len(kept_arguments),
-        "contract_violations_before": len(original_violations),
-        "contract_violations_after": len(kept_violations),
-        "excluded_count": len(excluded_evidence),
-    }
-
-    for option in filtered.get("remedy_options", []):
-        option["supporting_argument_indices"] = remap_indices(
-            option.get("supporting_argument_indices", []),
-            argument_index_map,
-        )
-
-    return filtered
-
-
-def verify_and_filter_strategy(
-    *,
-    case_id: str,
-    denial_intake: dict[str, Any],
-    personal_evidence: dict[str, Any],
-    external_evidence: dict[str, Any],
-    contact_actions: dict[str, Any],
-    strategy: dict[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    root = build_verification_root(
-        denial_intake,
-        personal_evidence,
-        external_evidence,
-        contact_actions,
-        strategy,
-    )
-    strategy_claims = verify_strategy_claims(strategy, root)
-    contract_violations = verify_contract_violations(strategy, root)
-    filtered_strategy = filter_strategy_for_drafting(
-        strategy,
-        root,
-        strategy_claims,
-        contract_violations,
-    )
-    all_items = [*strategy_claims, *contract_violations]
-    counts = Counter(item["status"] for item in all_items)
-    recommendations = build_recommendations(strategy_claims, contract_violations, [])
-    raw_status = verification_status(all_items)
-
-    report = {
-        "case_id": case_id,
-        "status": filter_stage_status(raw_status, filtered_strategy),
-        "raw_verification_status": raw_status,
-        "generated_at": utc_now(),
-        "stage": "pre_draft_strategy_filter",
-        "summary": {
-            "strategy_claims": len(strategy_claims),
-            "contract_violations": len(contract_violations),
-            "status_counts": dict(counts),
-            "recommendation_count": len(recommendations),
-            "excluded_count": len(filtered_strategy.get("excluded_evidence", [])),
-        },
-        "strategy_claims": strategy_claims,
-        "contract_violations": contract_violations,
-        "recommendations": recommendations,
-        "filtered_strategy_summary": filtered_strategy["verification_filter"],
-    }
-    return filtered_strategy, report
 
 
 def verify_contract_violations(strategy: dict[str, Any], root: dict[str, Any]) -> list[dict[str, Any]]:
@@ -395,15 +229,6 @@ def verification_status(items: list[dict[str, Any]]) -> str:
     return "verified"
 
 
-def filter_stage_status(raw_status: str, filtered_strategy: dict[str, Any]) -> str:
-    filter_summary = filtered_strategy.get("verification_filter", {})
-    if not filtered_strategy.get("argument_chain"):
-        return "blocked"
-    if filter_summary.get("excluded_count", 0):
-        return "filtered"
-    return raw_status
-
-
 def build_recommendations(
     strategy_claims: list[dict[str, Any]],
     contract_violations: list[dict[str, Any]],
@@ -439,15 +264,15 @@ def verify_pipeline_artifacts(
     drafted: dict[str, Any],
     packet: dict[str, Any],
 ) -> dict[str, Any]:
-    root = build_verification_root(
-        denial_intake,
-        personal_evidence,
-        external_evidence,
-        contact_actions,
-        strategy,
-        drafted,
-        packet,
-    )
+    root = {
+        "denial_intake": denial_intake,
+        "personal_evidence": personal_evidence,
+        "external_evidence": external_evidence.get("data", external_evidence),
+        "contact_actions": contact_actions,
+        "appeal_strategy": strategy,
+        "drafted_letter": drafted,
+        "appeal_packet": packet,
+    }
 
     strategy_claims = verify_strategy_claims(strategy, root)
     contract_violations = verify_contract_violations(strategy, root)
