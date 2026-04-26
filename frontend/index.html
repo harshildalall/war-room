@@ -254,6 +254,25 @@ function getLiveCitations(caseResult) {
   return caseResult?.drafted_letter?.citations_footnoted || caseResult?.appeal_packet?.citations_footnoted || null;
 }
 
+function formatCitationDisplay(citation, index) {
+  const rawLabel = citation?.label || citation?.source || `Citation ${citation?.footnote_index || index + 1}`;
+  const rawDescription = citation?.desc || citation?.quote || '';
+  const sourceLooksInternal = /^external_evidence\.citations\[\d+\]$/.test(rawLabel) || /^strategy\./.test(rawLabel);
+  if (sourceLooksInternal && rawDescription.includes(' — ')) {
+    const [title, ...rest] = rawDescription.split(' — ');
+    return {
+      chip: citation?.type || `Citation ${citation?.footnote_index || index + 1}`,
+      label: title,
+      desc: rest.join(' — '),
+    };
+  }
+  return {
+    chip: citation?.type || `Citation ${citation?.footnote_index || index + 1}`,
+    label: sourceLooksInternal ? `Citation ${citation?.footnote_index || index + 1}` : rawLabel,
+    desc: rawDescription,
+  };
+}
+
 function getLiveDeadline(caseResult) {
   return caseResult?.drafted_letter?.deadline || caseResult?.appeal_packet?.deadline || MOCK_CASE.deadline;
 }
@@ -1015,15 +1034,18 @@ function Letter({ onHistory, onProfile, caseResult }) {
               { label: 'Appeals Council M-18-1122', desc: 'MA plan cannot apply stricter standard than Traditional Medicare', type: 'Precedent' },
               { label: 'Jimmo v. Sebelius (2013)', desc: 'Maintenance standard — no improvement required for coverage', type: 'Case Law' },
               { label: 'UHC CPB 0187', desc: "UHC's own clinical policy bulletin — criteria met per records", type: "Insurer's Own Policy" },
-            ]).map((c, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 12, background: 'var(--blue-light)', color: 'var(--blue)', whiteSpace: 'nowrap' }}>{c.type || `Citation ${c.footnote_index || i + 1}`}</span>
-                <div>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{c.label || c.source}</span>
-                  <span style={{ color: 'var(--text2)', fontSize: 13 }}> — {c.desc || c.quote}</span>
+            ]).map((c, i) => {
+              const citation = formatCitationDisplay(c, i);
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 12, background: 'var(--blue-light)', color: 'var(--blue)', whiteSpace: 'nowrap' }}>{citation.chip}</span>
+                  <div>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{citation.label}</span>
+                    {citation.desc && <span style={{ color: 'var(--text2)', fontSize: 13 }}> — {citation.desc}</span>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
