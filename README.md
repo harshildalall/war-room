@@ -1,4 +1,4 @@
-# Counterclaim ⚖️
+# Clav.ai ⚖️
 
 **An AI-powered multi-agent pipeline that reads insurance denial letters and writes back.**
 
@@ -8,36 +8,30 @@ Counterclaim takes a denial intake document, fans out to parallel evidence-gathe
 
 ## How It Works
 
+ 
 ```
-                        ┌─────────────────────────────────────────────────┐
-                        │                  Orchestrator                   │
-                        └────────────────────┬────────────────────────────┘
-                                             │
-                   ┌─────────────────────────▼─────────────────────────┐
-                   │                       Parser                       │
-                   │            (parses denial / case document)         │
-                   └──────────────┬────────────────────────────────────┘
-                                  │
-            ┌─────────────────────┼──────────────────────┐
-            │                     │                      │
-    ┌───────▼──────┐   ┌──────────▼─────────┐   ┌───────▼──────────────┐
-    │ Contact Agent│   │Personal Evidence   │   │External Evidence     │
-    │ (missing info│   │Agent               │   │Agent                 │
-    │  requests)   │   │(patient history,   │   │(clinical guidelines, │
-    └──────────────┘   │ records)           │   │ precedents)          │
-                       └──────────┬─────────┘   └───────┬──────────────┘
-                                  │                      │
-                       ┌──────────▼──────────────────────▼──────────────┐
-                       │              Appeal Strategy Agent              │
-                       │    (denial + personal evidence + external       │
-                       │     evidence → structured appeal strategy)      │
-                       └──────────────────────┬──────────────────────────┘
-                                              │
-                                   ┌──────────▼──────────┐
-                                   │    Drafting Agent   │
-                                   │  (final appeal      │
-                                   │   letter output)    │
-                                   └─────────────────────┘
+  [ Denial Letter ]
+         │
+         ▼
+      Parser                         structures the raw denial document
+         │
+         ▼
+  ┌──────┴──────┐
+  │             │                    ← parallel
+  Personal    External
+  Evidence    Evidence
+  Agent       Agent
+  │             │
+  └──────┬──────┘
+         │
+         ▼
+  Appeal Strategy Agent              synthesizes denial + all evidence
+         │
+         ▼
+   Drafting Agent                    writes the appeal letter
+         │
+         ▼
+  [ Appeal Letter ]
 ```
 
 Each agent is an independent FastAPI service. They communicate exclusively via JSON. The orchestrator wires them together end-to-end.
