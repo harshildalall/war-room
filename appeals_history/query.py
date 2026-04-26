@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from appeal_history.db import get_collection
+from appeals_history.db import get_collection
 
 _NO_ID = {"_id": 0}
 

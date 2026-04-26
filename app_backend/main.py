@@ -4,6 +4,7 @@ import json
 import re
 import sys
 import threading
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -30,6 +31,7 @@ load_dotenv(REPO_ROOT / "external_evidence_agent" / ".env")
 from orchestrator.run_pipeline import load_json, run_pipeline
 from parser.classify import classify_file
 from parser.prompt import run_parser_prompt
+from appeals_history.query import get_appeal, list_appeals
 
 app = FastAPI(title="Counterclaim Demo Backend")
 JOBS: dict[str, dict[str, Any]] = {}
@@ -40,6 +42,53 @@ def read_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"Missing artifact: {path.name}")
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def serialize_mongo(value: Any) -> Any:
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [serialize_mongo(item) for item in value]
+    if isinstance(value, dict):
+        return {key: serialize_mongo(item) for key, item in value.items()}
+    return value
+
+
+def history_summary(record: dict[str, Any]) -> dict[str, Any]:
+    citations = record.get("citations") or []
+    scores = [
+        float(citation.get("relevance_score") or 0)
+        for citation in citations
+        if citation.get("relevance_score") is not None
+    ]
+    confidence = round((sum(scores) / len(scores)) * 100) if scores else 71
+    outcome = record.get("outcome") or {}
+    outcome_status = outcome.get("outcome_status") or "filed"
+    status_labels = {
+        "approved": "Won",
+        "partial_approval": "Won",
+        "denied": "Lost",
+        "escalated": "Pending",
+        "withdrawn": "Closed",
+        "pending": "Pending",
+        "filed": "Filed",
+    }
+    amount = record.get("amount_denied_usd")
+    return {
+        "case_id": record.get("case_id"),
+        "date": (record.get("recorded_at") or record.get("updated_at") or "")[:10],
+        "denied": record.get("denied_service") or record.get("denial_reason_category") or "Insurance denial",
+        "insurer": record.get("insurer_name") or record.get("plan_name") or "Unknown insurer",
+        "amount": f"${amount:,.0f}" if isinstance(amount, (int, float)) else "Amount unknown",
+        "status": status_labels.get(outcome_status, "Filed"),
+        "confidence": confidence,
+        "days": outcome.get("days_to_decision") or 0,
+        "verification_status": record.get("verification_status"),
+        "codes": {
+            "cpt_hcpcs": record.get("cpt_hcpcs_codes") or [],
+            "icd10": record.get("icd10_codes") or [],
+        },
+    }
 
 
 def artifacts_dir(case_id: str) -> Path:
@@ -342,6 +391,38 @@ def get_job(job_id: str) -> dict[str, Any]:
         if job is None:
             raise HTTPException(status_code=404, detail="Job not found.")
         return dict(job)
+
+
+@app.get("/api/history")
+def history(limit: int = 25, offset: int = 0) -> dict[str, Any]:
+    try:
+        records = [serialize_mongo(record) for record in list_appeals(limit=limit, offset=offset)]
+        return {
+            "status": "ok",
+            "cases": [history_summary(record) for record in records],
+            "records": records,
+        }
+    except Exception as exc:
+        return {
+            "status": "unavailable",
+            "cases": [],
+            "records": [],
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+
+@app.get("/api/history/{case_id}")
+def history_case(case_id: str) -> dict[str, Any]:
+    try:
+        record = get_appeal(case_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="History record not found.")
+        serialized = serialize_mongo(record)
+        return {"status": "ok", "case": history_summary(serialized), "record": serialized}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"{type(exc).__name__}: {exc}") from exc
 
 
 @app.get("/api/latest")
