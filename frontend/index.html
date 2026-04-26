@@ -360,10 +360,6 @@ function DenialHero() {
 // ── SCREEN 1: LANDING ────────────────────────────────────────────────────────
 function Landing({ onNext, onSignIn }) {
   const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const [worldIDOpen, setWorldIDOpen] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [authDone, setAuthDone] = useState(false);
-
 
   const headlines = {
     fight: <><em>Their</em> AI denied you<br/>in 1.2 seconds.<br/>Ours fights back.</>,
@@ -376,14 +372,8 @@ function Landing({ onNext, onSignIn }) {
     legal: 'The appeal process takes 40 hours manually. We do it in 45 seconds.',
   };
 
-  const signInMode = React.useRef(false);
-  function openSignIn() { signInMode.current = true; setWorldIDOpen(true); }
-  function openAppeal() { signInMode.current = false; setWorldIDOpen(true); }
-  function handleScan() {
-    setVerifying(true);
-    setTimeout(() => { setVerifying(false); setAuthDone(true); }, 2200);
-    setTimeout(() => { setWorldIDOpen(false); signInMode.current ? onSignIn() : onNext(); }, 3400);
-  }
+  function openSignIn() { onSignIn(); }
+  function openAppeal() { onNext(); }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>
@@ -420,7 +410,7 @@ function Landing({ onNext, onSignIn }) {
             </Btn>
             <button style={{ background: 'none', border: 'none', fontSize: 15, color: 'var(--text2)', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>How it works</button>
           </div>
-          <p style={{ fontSize: 12, color: 'oklch(70% 0.01 250)' }}>Verified with World ID · No personal data stored · Medicare only</p>
+          <p style={{ fontSize: 12, color: 'oklch(70% 0.01 250)' }}>No account required for demo · Review before sending · Medicare focus</p>
         </div>
 
         {/* Right: letter, edge to edge */}
@@ -439,51 +429,23 @@ function Landing({ onNext, onSignIn }) {
         ))}
       </div>
 
-      {/* World ID Modal */}
-      {worldIDOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => setWorldIDOpen(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 24, padding: 48, maxWidth: 400, width: '90%', textAlign: 'center', animation: 'fadeIn 0.2s both' }}>
-            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 1 0 20M12 2a14.5 14.5 0 0 0 0 20M2 12h20"/></svg>
-            </div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Verify with World ID</h2>
-            <p style={{ color: 'var(--text2)', marginBottom: 32, fontSize: 16, lineHeight: 1.6 }}>We confirm you're a real person — without storing any personal information.</p>
-            {!verifying && !authDone && (
-              <div style={{ padding: '28px', border: '2px dashed var(--border)', borderRadius: 16, marginBottom: 24, cursor: 'pointer', background: 'var(--bg)' }} onClick={handleScan}>
-                <div style={{ fontSize: 64, marginBottom: 8 }}>📱</div>
-                <p style={{ fontWeight: 600, fontSize: 16 }}>Tap to scan QR code</p>
-                <p style={{ fontSize: 13, color: 'var(--text2)', marginTop: 4 }}>(Demo: tap to simulate scan)</p>
-              </div>
-            )}
-            {verifying && (
-              <div style={{ padding: 32 }}>
-                <div className="spinner" style={{ width: 40, height: 40, borderWidth: 3, margin: '0 auto 16px' }}></div>
-                <p style={{ fontWeight: 600 }}>Verifying…</p>
-              </div>
-            )}
-            {authDone && (
-              <div style={{ padding: 24, background: 'var(--green-light)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
-                <span style={{ fontSize: 28 }}>✓</span>
-                <div><p style={{ fontWeight: 700, color: 'var(--green)' }}>Verified!</p><p style={{ fontSize: 14, color: 'var(--text2)' }}>Launching…</p></div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 // ── SCREEN 2: UPLOAD ─────────────────────────────────────────────────────────
 function Upload({ onNext }) {
-  const [files, setFiles] = useState({ denial: null, contract: null, records: null });
+  const [files, setFiles] = useState({ denial: null });
   const [story, setStory] = useState('');
-  const [dragging, setDragging] = useState(null);
-  const [step, setStep] = useState(0); // 0=denial, 1=records, 2=story
+  const denialInputRef = useRef(null);
 
-  function mockUpload(field) {
-    const names = { denial: 'UHC_Denial_Letter_Mar2026.pdf', contract: 'Medicare_Advantage_Plan_2026.pdf', records: 'Medical_Records_Cedars.pdf' };
-    setFiles(f => ({ ...f, [field]: names[field] }));
+  function useDemoDenial() {
+    setFiles({ denial: 'Demo_UHC_Denial_Letter_Mar2026.pdf' });
+  }
+
+  function handleDenialFile(event) {
+    const file = event.target.files?.[0];
+    if (file) setFiles({ denial: file.name });
   }
 
   const canProceed = files.denial;
@@ -495,26 +457,14 @@ function Upload({ onNext }) {
       subtitle: 'This is the letter from your insurance company saying your claim was denied. It may be on paper or in your email.',
       required: true,
       icon: '📄',
-    },
-    {
-      key: 'records',
-      title: 'Add your medical records',
-      subtitle: 'Optional but helps a lot. Include discharge summaries, doctor notes, or anything related to the denied treatment.',
-      required: false,
-      icon: '🏥',
-    },
+    }
   ];
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <nav style={{ padding: '20px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
         <Logo />
-        <div style={{ display: 'flex', align: 'center', gap: 10 }}>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="2.5"><polyline points="2,8 6,12 14,4"/></svg>
-          </div>
-          <span style={{ fontSize: 15, color: 'var(--text2)' }}>Verified · Gene L.</span>
-        </div>
+        <span style={{ fontSize: 15, color: 'var(--text2)' }}>Demo workspace · no account required</span>
       </nav>
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
@@ -553,13 +503,21 @@ function Upload({ onNext }) {
                     <button onClick={() => setFiles(f => ({ ...f, [s.key]: null }))} style={{ marginLeft: 'auto', border: 'none', background: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 20 }}>×</button>
                   </div>
                 ) : (
-                  <div onClick={() => mockUpload(s.key)}
-                    style={{ padding: '28px', border: '2px dashed var(--border)', borderRadius: 14, textAlign: 'center', cursor: 'pointer', background: 'var(--bg)', transition: 'all 0.2s' }}
+                  <div
+                    onClick={() => denialInputRef.current?.click()}
+                    style={{ padding: '28px', border: '2px dashed var(--border)', borderRadius: 14, textAlign: 'center', cursor: 'pointer', background: 'var(--bg)', transition: 'all 0.2s', maxWidth: 440, margin: '0 auto' }}
                     onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--blue)'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                   >
+                    <input ref={denialInputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.txt" onChange={handleDenialFile} style={{ display: 'none' }} />
                     <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>Tap to upload or take a photo</p>
-                    <p style={{ fontSize: 13, color: 'var(--text2)' }}>PDF, JPG, or PNG · (Demo: tap to add sample file)</p>
+                    <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 14 }}>PDF, JPG, PNG, or TXT</p>
+                    <button
+                      onClick={e => { e.stopPropagation(); useDemoDenial(); }}
+                      style={{ border: '1.5px solid var(--blue)', background: 'white', color: 'var(--blue)', borderRadius: 10, padding: '9px 14px', fontWeight: 700, fontSize: 13 }}
+                    >
+                      Use demo denial letter
+                    </button>
                   </div>
                 )}
               </div>
@@ -982,7 +940,7 @@ function History({ onNew, onProfile }) {
       </nav>
       <div style={{ maxWidth: 780, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
         <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 40, marginBottom: 8 }}>Your Cases</h1>
-        <p style={{ color: 'var(--text2)', marginBottom: 40, fontSize: 17 }}>Gene L. · Verified with World ID · No personal data stored</p>
+        <p style={{ color: 'var(--text2)', marginBottom: 40, fontSize: 17 }}>Gene L. · Demo case workspace</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {cases.map((c, i) => (
             <div key={i} style={{ padding: '24px 28px', background: 'white', borderRadius: 20, border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
@@ -1036,13 +994,13 @@ function Profile({ onBack, onNewCase }) {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 700, fontSize: 18 }}>Gene L.</span>
-              <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 20, background: 'var(--green)', color: 'white', fontWeight: 700 }}>✓ World ID Verified</span>
+              <span style={{ fontSize: 12, padding: '3px 10px', borderRadius: 20, background: 'var(--green)', color: 'white', fontWeight: 700 }}>Demo profile</span>
             </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'oklch(70% 0.02 255)', letterSpacing: 0.3 }}>wld_●●●●●●●●f3a9c · Medicare patient</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'oklch(70% 0.02 255)', letterSpacing: 0.3 }}>counterclaim-demo · Medicare appeal</div>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: 11, color: 'oklch(65% 0.02 255)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>No PII stored</div>
-            <div style={{ fontSize: 12, color: 'oklch(75% 0.02 255)' }}>Anonymous · encrypted</div>
+            <div style={{ fontSize: 11, color: 'oklch(65% 0.02 255)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>Local demo</div>
+            <div style={{ fontSize: 12, color: 'oklch(75% 0.02 255)' }}>Generated artifacts</div>
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
@@ -1093,8 +1051,8 @@ function Profile({ onBack, onNewCase }) {
           </div>
         </div>
         <div style={{ padding: '20px 24px', background: 'var(--blue-light)', borderRadius: 16, border: '1px solid oklch(82% 0.08 255)' }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--blue)', marginBottom: 6 }}>Your privacy is the product</div>
-          <p style={{ fontSize: 13, color: 'oklch(38% 0.1 255)', lineHeight: 1.7 }}>Counterclaim never stores your name, Social Security number, or medical records. Your account is identified only by your World ID nullifier hash — a cryptographic proof that you're a real person, with zero personal data attached.</p>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--blue)', marginBottom: 6 }}>Demo mode</div>
+          <p style={{ fontSize: 13, color: 'oklch(38% 0.1 255)', lineHeight: 1.7 }}>This prototype uses local generated artifacts for the demo case. Review every generated appeal packet before submission.</p>
         </div>
       </div>
     </div>
