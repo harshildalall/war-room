@@ -16,19 +16,26 @@ DENIAL_INTAKE_SHAPE = {
     "schema_version": "1.0",
     "status": "parsed",
     "provenance": {},
-    "insurer": None,
-    "plan_id": None,
-    "member_id": None,
-    "denied_procedure_codes": [],
-    "diagnosis_codes": [],
+    "insurer_name": None,
+    "plan_name": None,
+    "member_id_last4": None,
+    "denied_service": None,
     "denial_reason_text": None,
     "denial_reason_category": None,
     "denial_date": None,
     "appeal_deadline": None,
-    "appeal_level": "first_internal",
-    "treating_physician": None,
-    "service_dates": [],
-    "confidence_score": 0.0
+    "current_appeal_level": None,
+    "amount_denied_usd": None,
+    "cited_policy_names": [],
+    "codes": {
+        "cpt_hcpcs": [],
+        "icd10": [],
+        "revenue_codes": [],
+        "policy_codes": []
+    },
+    "extracted_quotes": [],
+    "field_confidence": {},
+    "info_gaps": []
 }
 
 MISSING_INFO_SHAPE = {
@@ -36,8 +43,9 @@ MISSING_INFO_SHAPE = {
     "schema_version": "1.0",
     "status": "pending",
     "provenance": {},
-    "missing_fields": [],
-    "can_proceed": True
+    "missing_items": [],
+    "outreach_targets": [],
+    "non_blocking": True
 }
 
 PERSONAL_EVIDENCE_TASK_SHAPE = {
@@ -46,16 +54,11 @@ PERSONAL_EVIDENCE_TASK_SHAPE = {
     "status": "pending",
     "provenance": {},
     "denial_category": None,
-    "denied_procedures": [],
-    "diagnosis": [],
-    "patient_narrative": None,
-    "evidence_gaps": [],
-    "instructions": {
-        "extract_symptoms": True,
-        "extract_treatment_history": True,
-        "flag_gaps": True,
-        "priority_fields": ["treating_physician_statement", "prior_treatment_attempts"]
-    }
+    "denied_service": None,
+    "proof_requirements": [],
+    "fact_targets": [],
+    "user_questions": [],
+    "record_types_to_review": []
 }
 
 EXTERNAL_EVIDENCE_TASK_SHAPE = {
@@ -63,8 +66,16 @@ EXTERNAL_EVIDENCE_TASK_SHAPE = {
     "schema_version": "1.0",
     "status": "pending",
     "provenance": {},
-    "search_queries": [],
-    "preferred_sources": ["CMS NCD", "specialty society guidelines", "PubMed"],
     "denial_category": None,
-    "insurer": None
+    "codes": {
+        "cpt_hcpcs": [],
+        "icd10": [],
+        "revenue_codes": [],
+        "policy_codes": []
+    },
+    "denied_service": None,
+    "insurer_name": None,
+    "plan_name": None,
+    "search_objectives": [],
+    "source_priority": ["CMS_NCD", "CMS_LCD", "CMS_MANUAL", "INSURER_POLICY", "GUIDELINE"]
 }
