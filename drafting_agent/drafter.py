@@ -94,7 +94,7 @@ DRAFT_TOOL = {
 
 
 def draft_letter(strategy: dict) -> dict:
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(timeout=25.0)
 
     response = client.messages.create(
         model="claude-sonnet-4-6",

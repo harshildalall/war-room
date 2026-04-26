@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import sys
-from json import JSONDecodeError
 from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any, Callable
@@ -300,7 +299,7 @@ def run_pipeline(
     try:
         drafted = draft_letter(strategy)
         draft_notes: list[str] = []
-    except (JSONDecodeError, KeyError, ValueError) as exc:
+    except Exception as exc:
         drafted = fallback_draft(strategy, f"{type(exc).__name__}: {exc}")
         draft_notes = [drafted["generation_note"]]
     drafted_path = artifacts_dir / "drafted_letter.json"
