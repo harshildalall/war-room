@@ -24,3 +24,7 @@ cases/
 
 # Test files
 *.txt
+
+# Pycharm Ignore
+
+.idea/
