@@ -18,12 +18,15 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
-import json
 import sys
 from pathlib import Path
 
-from appeal_strategy.strategy_engine import (
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import argparse
+import json
+
+from strategy_engine import (
     StrategyEngineError,
     generate_strategy,
 )

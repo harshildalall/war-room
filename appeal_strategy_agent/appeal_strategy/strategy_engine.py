@@ -168,10 +168,27 @@ def _call_claude(
     )
     if tool_use is None:
         raise StrategyEngineError(
-            "Model did not return a tool_use block despite forced tool_choice."
+            "Model did not return a tool_use block despite forced tool_choice. "
+            f"stop_reason={message.stop_reason!r}."
         )
 
-    return dict(tool_use.input)
+    result = dict(tool_use.input)
+
+    required_fields = tool_schema["input_schema"].get("required", [])
+    missing = [f for f in required_fields if f not in result]
+    if missing:
+        raise StrategyEngineError(
+            f"Model response is missing required fields: {missing}. "
+            f"stop_reason={message.stop_reason!r}"
+            + (
+                " (output was truncated — increase MAX_TOKENS or further "
+                "tighten the schema/prompt)."
+                if message.stop_reason == "max_tokens"
+                else "."
+            )
+        )
+
+    return result
 
 
 def generate_strategy(

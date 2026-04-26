@@ -7,6 +7,7 @@
       "case_id": {"type": "string"},
       "argument_chain": {
         "type": "array",
+        "maxItems": 4,
         "items": {
           "type": "object",
           "properties": {
@@ -15,13 +16,16 @@
               "type": "string",
               "enum": ["medical_necessity", "policy_violation", "procedural", "precedent"]
             },
-            "supporting_evidence": {"type": "array", "items": {"type": "string"}},
+            "supporting_evidence": {
+              "type": "array",
+              "description": "Reference paths into the input JSONs, not full quoted text. The drafting agent will resolve these references against the original input data. Examples: 'external_evidence.citations[2]', 'personal_evidence.treatment_history[0]', 'denial_intake.denial_reason_text'.",
+              "items": {"type": "string"}
+            },
             "strength": {"type": "number"}
           },
           "required": ["claim", "claim_type", "supporting_evidence", "strength"]
         }
       },
-      "strongest_arguments": {"type": "array", "items": {"type": "string"}},
       "contract_violations": {
         "type": "array",
         "items": {
@@ -37,6 +41,7 @@
       },
       "remedy_options": {
         "type": "array",
+        "maxItems": 3,
         "items": {
           "type": "object",
           "properties": {
@@ -78,8 +83,15 @@
             "items": {
               "type": "object",
               "properties": {
-                "denial_assertion": {"type": "string"},
-                "contradicting_fact": {"type": "string"},
+                "denial_assertion": {
+                  "type": "string",
+                  "maxLength": 150,
+                  "description": "Short summary of what the insurer claimed (max ~150 chars)."
+                },
+                "contradicting_fact": {
+                  "type": "string",
+                  "description": "Reference path into the input JSONs (e.g., 'personal_evidence.treating_physician_statement'), not full quoted text."
+                },
                 "evidence_source": {"type": "string"}
               }
             }
@@ -94,8 +106,15 @@
             "items": {
               "type": "object",
               "properties": {
-                "denial_assertion": {"type": "string"},
-                "contradicting_policy": {"type": "string"},
+                "denial_assertion": {
+                  "type": "string",
+                  "maxLength": 150,
+                  "description": "Short summary of what the insurer claimed (max ~150 chars)."
+                },
+                "contradicting_policy": {
+                  "type": "string",
+                  "description": "Reference path into the input JSONs (e.g., 'external_evidence.citations[3]'), not full quoted text."
+                },
                 "policy_source": {"type": "string"}
               }
             }
@@ -106,7 +125,6 @@
     "required": [
       "case_id",
       "argument_chain",
-      "strongest_arguments",
       "contract_violations",
       "remedy_options",
       "agent_recommended_remedy",
