@@ -1063,12 +1063,29 @@ function Letter({ onHistory, onProfile, caseResult }) {
 
 // ── SCREEN 6: HISTORY ────────────────────────────────────────────────────────
 function History({ onNew, onProfile }) {
-  const cases = [
+  const fallbackCases = [
     { date: 'Apr 25, 2026', denied: 'SNF Care — Post-Hospital', insurer: 'UHC Medicare Advantage', amount: '$12,400', status: 'Filed', confidence: 71, days: 0 },
     { date: 'Jan 12, 2026', denied: 'MRI — Lumbar Spine', insurer: 'Humana Gold Plus', amount: '$2,800', status: 'Won', confidence: 82, days: 34 },
     { date: 'Oct 3, 2025', denied: 'Physical Therapy (12 sessions)', insurer: 'Aetna Medicare', amount: '$1,400', status: 'Won', confidence: 68, days: 28 },
   ];
-  const statusColors = { Filed: 'var(--blue)', Won: 'var(--green)', Lost: 'var(--red)', Pending: 'var(--amber)' };
+  const [historyCases, setHistoryCases] = useState(null);
+  const [historyStatus, setHistoryStatus] = useState('loading');
+  const cases = historyCases?.length ? historyCases : fallbackCases;
+  const statusColors = { Filed: 'var(--blue)', Won: 'var(--green)', Lost: 'var(--red)', Pending: 'var(--amber)', Closed: 'var(--text2)' };
+
+  useEffect(() => {
+    let cancelled = false;
+    apiJson('/api/history')
+      .then(data => {
+        if (cancelled) return;
+        setHistoryCases(data.cases || []);
+        setHistoryStatus(data.status === 'ok' ? 'live' : 'fallback');
+      })
+      .catch(() => {
+        if (!cancelled) setHistoryStatus('fallback');
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -1081,7 +1098,9 @@ function History({ onNew, onProfile }) {
       </nav>
       <div style={{ maxWidth: 780, margin: '0 auto', padding: '60px 32px', width: '100%' }} className="fade-in">
         <h1 style={{ fontFamily: 'DM Serif Display', fontSize: 40, marginBottom: 8 }}>Your Cases</h1>
-        <p style={{ color: 'var(--text2)', marginBottom: 40, fontSize: 17 }}>Gene L. · Demo case workspace</p>
+        <p style={{ color: 'var(--text2)', marginBottom: 40, fontSize: 17 }}>
+          Gene L. · {historyStatus === 'live' ? 'Live Mongo case history' : historyStatus === 'loading' ? 'Loading case history…' : 'Demo case workspace'}
+        </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {cases.map((c, i) => (
             <div key={i} style={{ padding: '24px 28px', background: 'white', borderRadius: 20, border: '1.5px solid var(--border)', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
