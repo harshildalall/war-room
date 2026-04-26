@@ -89,6 +89,7 @@ def _hash_inputs(
         },
         sort_keys=True,
         separators=(",", ":"),
+        default=str,
     )
     return hashlib.md5(combined.encode("utf-8")).hexdigest()
 
@@ -110,7 +111,7 @@ def _load_cached(input_hash: str) -> dict[str, Any] | None:
 def _store_cached(input_hash: str, response: dict[str, Any]) -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     _cache_path(input_hash).write_text(
-        json.dumps(response, indent=2), encoding="utf-8"
+        json.dumps(response, indent=2, default=str), encoding="utf-8"
     )
 
 
@@ -121,7 +122,7 @@ def _build_user_message(
     contact_actions: dict[str, Any],
 ) -> str:
     def block(tag: str, payload: dict[str, Any]) -> str:
-        return f"<{tag}>\n{json.dumps(payload, indent=2)}\n</{tag}>"
+        return f"<{tag}>\n{json.dumps(payload, indent=2, default=str)}\n</{tag}>"
 
     return "\n\n".join(
         [
@@ -240,4 +241,3 @@ if __name__ == "__main__":
         payload["contact_actions"],
     )
     print(json.dumps(result, indent=2))
-
