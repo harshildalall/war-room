@@ -1,4 +1,4 @@
-# Counterclaim ⚖️
+# Clav.ai ⚖️
 
 **An AI-powered multi-agent pipeline that reads insurance denial letters and writes back.**
 
