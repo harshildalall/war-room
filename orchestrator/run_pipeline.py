@@ -27,7 +27,7 @@ from drafting_agent.drafter import draft_letter
 from drafting_agent.packet import build_packet
 from external_evidence_agent.retrieval import retrieve_external_evidence
 from external_evidence_agent.schemas import ExternalEvidenceTask
-from orchestrator.verification import verify_pipeline_artifacts
+from orchestrator.verification import verify_and_filter_strategy, verify_pipeline_artifacts
 from appeal_strategy.api import parse_input
 from appeal_strategy.strategy_engine import generate_strategy
 
@@ -142,7 +142,7 @@ def fallback_draft(strategy: dict[str, Any], reason: str) -> dict[str, Any]:
             {
                 "footnote_index": index,
                 "source": violation.get("source", "strategy.contract_violations"),
-                "quote": violation.get("clause", ""),
+                "quote": violation.get("verified_quote") or violation.get("clause", ""),
                 "relevance_score": violation.get("contradiction_score", 0.0),
             }
         )
@@ -243,17 +243,36 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
     write_json(strategy_path, strategy)
     record("appeal_strategy_agent", "success", str(strategy_path))
 
+    verified_strategy, strategy_verification_report = verify_and_filter_strategy(
+        case_id=case_id,
+        denial_intake=denial_intake,
+        personal_evidence=personal_evidence,
+        external_evidence=external_artifact,
+        contact_actions=contact_actions,
+        strategy=strategy,
+    )
+    verified_strategy_path = artifacts_dir / "verified_appeal_strategy.json"
+    strategy_verification_path = artifacts_dir / "strategy_verification_report.json"
+    write_json(verified_strategy_path, verified_strategy)
+    write_json(strategy_verification_path, strategy_verification_report)
+    record(
+        "strategy_evidence_filter",
+        strategy_verification_report["status"],
+        str(verified_strategy_path),
+        strategy_verification_report.get("recommendations", []),
+    )
+
     try:
-        drafted = draft_letter(strategy)
+        drafted = draft_letter(verified_strategy)
         draft_notes: list[str] = []
     except (JSONDecodeError, KeyError, ValueError) as exc:
-        drafted = fallback_draft(strategy, f"{type(exc).__name__}: {exc}")
+        drafted = fallback_draft(verified_strategy, f"{type(exc).__name__}: {exc}")
         draft_notes = [drafted["generation_note"]]
     drafted_path = artifacts_dir / "drafted_letter.json"
     write_json(drafted_path, drafted)
     record("drafting_agent_letter", "success", str(drafted_path), draft_notes)
 
-    packet = build_packet(strategy, drafted)
+    packet = build_packet(verified_strategy, drafted)
     packet_path = artifacts_dir / "appeal_packet.json"
     write_json(packet_path, packet)
     record("drafting_agent_packet", "success", str(packet_path))
@@ -264,7 +283,7 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
         personal_evidence=personal_evidence,
         external_evidence=external_artifact,
         contact_actions=contact_actions,
-        strategy=strategy,
+        strategy=verified_strategy,
         drafted=drafted,
         packet=packet,
     )
@@ -283,10 +302,13 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
             "contact_actions": str(contact_path),
             "external_evidence": str(external_path),
             "appeal_strategy": str(strategy_path),
+            "verified_appeal_strategy": str(verified_strategy_path),
+            "strategy_verification_report": str(strategy_verification_path),
             "drafted_letter": str(drafted_path),
             "appeal_packet": str(packet_path),
             "verification_report": str(verification_path),
         },
+        "strategy_verification_status": strategy_verification_report["status"],
         "verification_status": verification_report["status"],
         "status_log": status_log,
     }
