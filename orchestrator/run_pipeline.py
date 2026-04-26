@@ -27,6 +27,7 @@ from drafting_agent.drafter import draft_letter
 from drafting_agent.packet import build_packet
 from external_evidence_agent.retrieval import retrieve_external_evidence
 from external_evidence_agent.schemas import ExternalEvidenceTask
+from orchestrator.verification import verify_pipeline_artifacts
 from appeal_strategy.api import parse_input
 from appeal_strategy.strategy_engine import generate_strategy
 
@@ -257,6 +258,20 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
     write_json(packet_path, packet)
     record("drafting_agent_packet", "success", str(packet_path))
 
+    verification_report = verify_pipeline_artifacts(
+        case_id=case_id,
+        denial_intake=denial_intake,
+        personal_evidence=personal_evidence,
+        external_evidence=external_artifact,
+        contact_actions=contact_actions,
+        strategy=strategy,
+        drafted=drafted,
+        packet=packet,
+    )
+    verification_path = artifacts_dir / "verification_report.json"
+    write_json(verification_path, verification_report)
+    record("verification", verification_report["status"], str(verification_path))
+
     summary = {
         "case_id": case_id,
         "status": "success",
@@ -270,7 +285,9 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
             "appeal_strategy": str(strategy_path),
             "drafted_letter": str(drafted_path),
             "appeal_packet": str(packet_path),
+            "verification_report": str(verification_path),
         },
+        "verification_status": verification_report["status"],
         "status_log": status_log,
     }
     write_json(case_dir / "pipeline_result.json", summary)
