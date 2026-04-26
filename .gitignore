@@ -28,3 +28,7 @@ cases/
 # Pycharm Ignore
 
 .idea/
+
+# Test Outputs
+
+.drafting_agent/output
