@@ -461,17 +461,17 @@ function Landing({ onNext, onSignIn }) {
 
 // ── SCREEN 2: UPLOAD ─────────────────────────────────────────────────────────
 function Upload({ onNext }) {
-  const [files, setFiles] = useState({ denial: null });
+  const [files, setFiles] = useState({ denial: null, denialFile: null, useDemo: false });
   const [story, setStory] = useState('');
   const denialInputRef = useRef(null);
 
   function useDemoDenial() {
-    setFiles({ denial: 'Demo_UHC_Denial_Letter_Mar2026.pdf' });
+    setFiles({ denial: 'Demo_UHC_Denial_Letter_Mar2026.pdf', denialFile: null, useDemo: true });
   }
 
   function handleDenialFile(event) {
     const file = event.target.files?.[0];
-    if (file) setFiles({ denial: file.name });
+    if (file) setFiles({ denial: file.name, denialFile: file, useDemo: false });
   }
 
   const canProceed = files.denial;
@@ -526,7 +526,7 @@ function Upload({ onNext }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', background: 'var(--green-light)', borderRadius: 12 }}>
                     <span>✅</span>
                     <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--green)' }}>{files[s.key]}</span>
-                    <button onClick={() => setFiles(f => ({ ...f, [s.key]: null }))} style={{ marginLeft: 'auto', border: 'none', background: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 20 }}>×</button>
+                    <button onClick={() => setFiles(f => ({ ...f, [s.key]: null, denialFile: null, useDemo: false }))} style={{ marginLeft: 'auto', border: 'none', background: 'none', color: 'var(--text2)', cursor: 'pointer', fontSize: 20 }}>×</button>
                   </div>
                 ) : (
                   <div
@@ -566,7 +566,7 @@ function Upload({ onNext }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 15, color: 'var(--text2)' }}>{canProceed ? '✓ Ready to analyze' : 'Upload denial letter to continue'}</span>
-          <Btn onClick={onNext} variant="blue" size="lg" disabled={!canProceed} style={{ opacity: canProceed ? 1 : 0.4 }}>
+          <Btn onClick={() => onNext({ denialFile: files.denialFile, useDemo: files.useDemo, patientNarrative: story })} variant="blue" size="lg" disabled={!canProceed} style={{ opacity: canProceed ? 1 : 0.4 }}>
             Analyze My Case →
           </Btn>
         </div>
@@ -655,6 +655,7 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
   useEffect(() => {
     if (!jobEvents.length) return;
     const stepToAgent = {
+      doc_parser_agent: 0,
       seed_golden_artifacts: 0,
       contact_agent: 1,
       external_evidence_agent: 3,
@@ -672,6 +673,7 @@ function WarRoom({ onNext, backendRunning, backendStatus, jobEvents = [] }) {
       "verification",
     ];
     const labels = {
+      doc_parser_agent: "Document parser extracted denial details",
       seed_golden_artifacts: "Loaded parsed denial and patient facts",
       contact_agent: "Contact agent prepared missing-information requests",
       external_evidence_agent: "External evidence agent returned citation-backed policy evidence",
@@ -1200,6 +1202,7 @@ function App() {
   const [backendStatus, setBackendStatus] = useState(null);
   const [jobEvents, setJobEvents] = useState([]);
   const [selectedRemedy, setSelectedRemedy] = useState(null);
+  const [uploadPayload, setUploadPayload] = useState(null);
 
   useEffect(() => {
     apiJson('/api/latest')
@@ -1214,10 +1217,28 @@ function App() {
     setJobEvents([]);
     setBackendStatus({ type: 'info', message: 'Running real Counterclaim backend agents…' });
     try {
-      const job = await apiJson('/api/run-demo-job', {
-        method: 'POST',
-        body: JSON.stringify({ user_preferences: buildUserPreferences(remedy) }),
-      });
+      let job = null;
+      if (uploadPayload?.denialFile && !uploadPayload?.useDemo) {
+        const form = new FormData();
+        form.append('files', uploadPayload.denialFile);
+        form.append('patient_narrative', uploadPayload.patientNarrative || '');
+        form.append('user_preferences', JSON.stringify(buildUserPreferences(remedy)));
+        const response = await fetch('/api/run-upload-job', { method: 'POST', body: form });
+        if (!response.ok) {
+          let detail = `${response.status} ${response.statusText}`;
+          try {
+            const body = await response.json();
+            detail = body.detail || detail;
+          } catch (_) {}
+          throw new Error(detail);
+        }
+        job = await response.json();
+      } else {
+        job = await apiJson('/api/run-demo-job', {
+          method: 'POST',
+          body: JSON.stringify({ user_preferences: buildUserPreferences(remedy) }),
+        });
+      }
       let finalJob = job;
       while (finalJob.status === 'queued' || finalJob.status === 'running') {
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -1248,7 +1269,7 @@ function App() {
 
   const screens = {
     landing: <Landing onNext={() => setScreen('upload')} onSignIn={() => setScreen('profile')} />,
-    upload: <Upload onNext={() => setScreen('remedy')} />,
+    upload: <Upload onNext={(payload) => { setUploadPayload(payload); setScreen('remedy'); }} />,
     remedy: <Remedy onNext={startAnalysis} />,
     warroom: <WarRoom onNext={() => setScreen('letter')} backendRunning={backendRunning} backendStatus={backendStatus} jobEvents={jobEvents} />,
     letter: <Letter onHistory={() => setScreen('history')} onProfile={() => setScreen('profile')} caseResult={caseResult} />,
