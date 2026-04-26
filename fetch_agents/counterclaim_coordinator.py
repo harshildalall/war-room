@@ -118,14 +118,43 @@ def summarize_pipeline_result(result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def latest_demo_summary() -> str | None:
+    result_path = REPO_ROOT / "cases" / "demo-pt-tibia-001" / "pipeline_result.json"
+    if not result_path.exists():
+        return None
+    try:
+        return summarize_pipeline_result(json.loads(result_path.read_text(encoding="utf-8")))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def help_text() -> str:
+    return (
+        "Counterclaim Coordinator is online. I can run a medical insurance appeal "
+        "pipeline using JSON artifacts and return an appeal packet summary.\n\n"
+        "Try one of these:\n"
+        "- status\n"
+        "- demo summary\n"
+        "- run demo case\n\n"
+        "For the fastest demo, use 'demo summary' after the local pipeline has run once."
+    )
+
+
 def run_counterclaim_from_text(text: str) -> str:
+    normalized = text.strip().lower()
+    if normalized in {"status", "ping", "hello", "help", "what can you do?"}:
+        return help_text()
+
+    if "demo summary" in normalized or "latest demo" in normalized:
+        summary = latest_demo_summary()
+        if summary:
+            return summary
+        return "No local demo artifacts found yet. Send 'run demo case' to generate them."
+
     case_payload = parse_case_payload(text)
     if case_payload is None:
         if not should_run_demo(text):
-            return (
-                "I can run the Counterclaim appeal pipeline. Send full case JSON, "
-                "or say 'run demo case' to execute the built-in physical therapy denial demo."
-            )
+            return help_text()
         case_payload = load_json(DEFAULT_CASE_PATH)
 
     result = run_pipeline(case_payload)
