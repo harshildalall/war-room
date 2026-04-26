@@ -212,11 +212,12 @@ def parsed_case_to_pipeline_input(
 def set_job(job_id: str, **updates: Any) -> None:
     with JOBS_LOCK:
         current = JOBS.setdefault(job_id, {})
-        current.update(updates)
+        current.update(serialize_mongo(updates))
 
 
 def append_job_event(job_id: str, event: dict[str, Any]) -> None:
     with JOBS_LOCK:
+        event = serialize_mongo(event)
         current = JOBS.setdefault(job_id, {})
         current.setdefault("events", []).append(event)
         current["latest_event"] = event
