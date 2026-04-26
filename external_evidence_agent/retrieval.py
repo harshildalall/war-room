@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import os
 import re
 from collections import Counter
@@ -12,7 +11,8 @@ import certifi
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-from query_planner import build_queries, extract_codes
+from query_planner import extract_codes
+from question_generator import build_query_plan
 from schemas import (
     CitationSource,
     EvidenceQuery,
@@ -159,7 +159,8 @@ def candidate_to_citation(candidate: dict[str, Any], rank: int) -> ExternalCitat
 
 def retrieve_external_evidence(task: ExternalEvidenceTask, top_k: int = 8) -> ExternalEvidenceArtifact:
     store = MongoEvidenceStore()
-    queries = build_queries(task, top_k=top_k)
+    query_plan = build_query_plan(task, top_k=top_k)
+    queries = query_plan.queries
     traces: list[QueryTrace] = []
     merged: dict[str, dict[str, Any]] = {}
 
@@ -171,6 +172,7 @@ def retrieve_external_evidence(task: ExternalEvidenceTask, top_k: int = 8) -> Ex
                 strategy=query.strategy,
                 top_k=query.top_k,
                 result_count=len(results),
+                rationale=query.rationale,
             )
         )
         for result in results:
@@ -200,6 +202,7 @@ def retrieve_external_evidence(task: ExternalEvidenceTask, top_k: int = 8) -> Ex
         provenance={
             "agent": "external_evidence_agent",
             "retrieval_mode": "metadata_lexical_mongo",
+            "query_generation_mode": query_plan.mode,
             "generated_at": utc_now(),
         },
         data=ExternalEvidenceData(
@@ -211,6 +214,7 @@ def retrieve_external_evidence(task: ExternalEvidenceTask, top_k: int = 8) -> Ex
             notes_for_strategy_agent=[
                 "Retrieved evidence is citation-backed from the curated MongoDB corpus.",
                 "Embeddings/vector search are not enabled yet; ranking uses metadata and lexical scoring.",
+                *query_plan.notes,
             ],
         ),
     )

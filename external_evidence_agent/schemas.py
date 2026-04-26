@@ -39,6 +39,7 @@ class EvidenceQuery(BaseModel):
     codes: list[str] = Field(default_factory=list)
     source_types: list[SourceType] = Field(default_factory=list)
     insurer: str | None = None
+    rationale: str | None = None
 
 
 class QueryTrace(BaseModel):
@@ -46,6 +47,7 @@ class QueryTrace(BaseModel):
     strategy: QueryStrategy
     top_k: int
     result_count: int
+    rationale: str | None = None
 
 
 class CitationSource(BaseModel):
