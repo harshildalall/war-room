@@ -11,7 +11,7 @@ load_dotenv()
 
 from loader import load_strategy
 from drafter import draft_letter
-from renderer import render_docx, render_pdf
+from renderer import render_docx, render_pdf, render_uhc_form
 from packet import build_packet
 
 OUTPUT_DIR = Path("output")
@@ -29,7 +29,7 @@ app.add_middleware(
 class RunRequest(BaseModel):
     case_id: str
     appeal_strategy_ref: str
-    output_format: list = ["pdf", "docx", "json"]
+    output_format: list = ["docx", "pdf", "json", "uhc_form"]
     demo_mode: bool = True
 
 @app.post("/run")
@@ -38,28 +38,37 @@ async def run(req: RunRequest):
         strategy = load_strategy(req.appeal_strategy_ref)
         drafted = draft_letter(strategy)
 
-        docx_path = OUTPUT_DIR / f"{req.case_id}_appeal_letter.docx"
-        pdf_path  = OUTPUT_DIR / f"{req.case_id}_appeal_letter.pdf"
-        packet_path = OUTPUT_DIR / f"{req.case_id}_appeal_packet.json"
+        docx_path    = OUTPUT_DIR / f"{req.case_id}_appeal_letter.docx"
+        pdf_path     = OUTPUT_DIR / f"{req.case_id}_appeal_letter.pdf"
+        packet_path  = OUTPUT_DIR / f"{req.case_id}_appeal_packet.json"
+        uhc_form_path = OUTPUT_DIR / f"{req.case_id}_uhc_reconsideration.pdf"
 
         render_docx(strategy, drafted, docx_path)
 
         if "pdf" in req.output_format:
             render_pdf(docx_path, pdf_path)
 
+        if "uhc_form" in req.output_format:
+            render_uhc_form(strategy, drafted, uhc_form_path)
+
         packet = build_packet(strategy, drafted)
 
         with open(packet_path, "w") as f:
             json.dump(packet, f, indent=2)
 
+        artifacts = {
+            "appeal_letter_docx": str(docx_path),
+            "appeal_packet":      str(packet_path),
+        }
+        if "pdf" in req.output_format:
+            artifacts["appeal_letter_pdf"] = str(pdf_path)
+        if "uhc_form" in req.output_format:
+            artifacts["uhc_reconsideration_form"] = str(uhc_form_path)
+
         return {
             "case_id": req.case_id,
-            "status": "success",
-            "artifacts": {
-                "appeal_letter_docx": str(docx_path),
-                "appeal_letter_pdf":  str(pdf_path),
-                "appeal_packet":      str(packet_path)
-            }
+            "status":  "success",
+            "artifacts": artifacts
         }
 
     except ValueError as e:
