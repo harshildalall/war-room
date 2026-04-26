@@ -1,5 +1,5 @@
 from __future__ import annotations
-from appeal_history.db import init_db, ping
+from appeals_history.db import init_db, ping
 
 import argparse
 import json
@@ -31,7 +31,7 @@ from external_evidence_agent.schemas import ExternalEvidenceTask
 from orchestrator.verification import verify_pipeline_artifacts
 from appeal_strategy.api import parse_input
 from appeal_strategy.strategy_engine import generate_strategy
-from appeal_history.recorder import record_appeal
+from appeals_history.recorder import record_appeal
 
 log = logging.getLogger(__name__)
 
@@ -341,10 +341,10 @@ def run_pipeline(case_input: dict[str, Any], output_root: Path = CASES_DIR) -> d
             pipeline_status="success",
             verification_status=verification_report["status"],
         )
-        record("appeal_history", "success")
+        record("appeals_history", "success")
     except Exception as exc:
-        log.warning("appeal_history recording failed for case_id=%s: %s", case_id, exc)
-        record("appeal_history", "error", notes=[str(exc)])
+        log.warning("appeals_history recording failed for case_id=%s: %s", case_id, exc)
+        record("appeals_history", "error", notes=[str(exc)])
 
     # ── Summary ────────────────────────────────────────────────────────────
     summary = {
