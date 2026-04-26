@@ -11,3 +11,4 @@ tenacity
 orjson
 rapidfuzz
 pytest
+uagents
