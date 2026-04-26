@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sample UnitedHealthcare Denial Email</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 36px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f2933;
+      background: #ffffff;
+      font-size: 13px;
+      line-height: 1.48;
+    }
+    .email-shell {
+      border: 1px solid #d7dde5;
+      border-radius: 10px;
+      overflow: hidden;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .email-header {
+      background: #f4f7fb;
+      border-bottom: 1px solid #d7dde5;
+      padding: 18px 22px;
+    }
+    .row {
+      margin: 3px 0;
+    }
+    .label {
+      color: #64748b;
+      display: inline-block;
+      width: 78px;
+    }
+    .content {
+      padding: 24px 30px 30px;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 16px;
+      color: #0f172a;
+    }
+    h2 {
+      font-size: 15px;
+      margin: 22px 0 8px;
+      color: #0f172a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 18px;
+    }
+    td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      vertical-align: top;
+    }
+    td:first-child {
+      width: 38%;
+      background: #f8fafc;
+      font-weight: bold;
+    }
+    .notice {
+      background: #fff8e6;
+      border-left: 4px solid #d97706;
+      padding: 12px 14px;
+      margin: 18px 0;
+    }
+    .fine-print {
+      color: #64748b;
+      font-size: 11px;
+      margin-top: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-shell">
+    <div class="email-header">
+      <div class="row"><span class="label">From:</span> UnitedHealthcare Claims Notification &lt;claims-notice@uhc.example&gt;</div>
+      <div class="row"><span class="label">To:</span> Jordan Rivera &lt;jordan.rivera@example.com&gt;</div>
+      <div class="row"><span class="label">Date:</span> Monday, April 20, 2026 at 8:14 AM</div>
+      <div class="row"><span class="label">Subject:</span> Important: Coverage decision for physical therapy claim DEMO-PT-97110</div>
+    </div>
+    <div class="content">
+      <h1>UnitedHealthcare Coverage Decision Notice</h1>
+
+      <p>Dear Jordan Rivera,</p>
+
+      <p>
+        We reviewed the claim submitted by your treating physician, Dr. Demo Orthopedics,
+        for outpatient physical therapy therapeutic exercise services following your right
+        proximal tibia fracture. Based on the information available to us at the time of
+        review, UnitedHealthcare has denied payment for the services listed below.
+      </p>
+
+      <table>
+        <tr>
+          <td>Member ID</td>
+          <td>DEMO-MEMBER-001</td>
+        </tr>
+        <tr>
+          <td>Plan ID</td>
+          <td>DEMO-UHC-001</td>
+        </tr>
+        <tr>
+          <td>Claim / Reference Number</td>
+          <td>DEMO-PT-97110</td>
+        </tr>
+        <tr>
+          <td>Service dates reviewed</td>
+          <td>April 1, 2026 and April 8, 2026</td>
+        </tr>
+        <tr>
+          <td>Procedure code denied</td>
+          <td>CPT 97110 - therapeutic exercise</td>
+        </tr>
+        <tr>
+          <td>Diagnosis code listed</td>
+          <td>S82.101A - unspecified fracture of upper end of right tibia, initial encounter</td>
+        </tr>
+      </table>
+
+      <h2>Reason for denial</h2>
+      <p>
+        Physical therapy therapeutic exercise services were denied as not medically
+        necessary. The clinical records submitted did not show that the requested
+        services met UnitedHealthcare medical necessity criteria for continued outpatient
+        rehabilitation therapy.
+      </p>
+
+      <p>
+        Specifically, the information reviewed did not clearly document current functional
+        limitations, prior functional level, measurable therapy goals, or why skilled
+        therapeutic exercise under CPT 97110 was required instead of a home exercise
+        program.
+      </p>
+
+      <div class="notice">
+        <strong>Appeal rights:</strong> You may request a first-level internal appeal if
+        you disagree with this decision. Your appeal must be received by May 30, 2026.
+      </div>
+
+      <h2>What you may send with an appeal</h2>
+      <p>
+        You may submit physician notes, therapy evaluations, functional status records,
+        treatment plans, and any other information showing why outpatient physical therapy
+        was medically necessary after the tibia fracture.
+      </p>
+
+      <p>
+        Appeals may be submitted by mail or through your member portal. Please include
+        the member ID, claim number, denied code CPT 97110, diagnosis code S82.101A, and
+        the date of this notice.
+      </p>
+
+      <p>Sincerely,</p>
+      <p>UnitedHealthcare Appeals and Grievances Department</p>
+
+      <p class="fine-print">
+        This sample notice is fictional and created for software testing. It contains no
+        real protected health information.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
