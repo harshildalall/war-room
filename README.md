@@ -1,5 +1,38 @@
 # Counterclaim
 
+## Fetch.ai / Agentverse
+
+Counterclaim includes an ASI:One-compatible Fetch/uAgents coordinator at
+`fetch_agents/counterclaim_coordinator.py`.
+
+This agent implements the mandatory Agent Chat Protocol and exposes the local
+Counterclaim pipeline as an executable agent workflow. A user can ask it to run
+the demo appeal case, or provide full case JSON matching the orchestrator schema.
+
+### Deliverables
+
+- ASI1 Chat Session: https://asi1.ai/shared-chat/d6a13959-1b64-4e1d-b34c-7335ad570468
+- Agent Profile: https://agentverse.ai/agents/details/agent1qwv5hzqy6vq4g8srs3d5hjzxjkss9p0tacvmhdkecus8fk55z5rdv6leevj/profile
+
+### Run the Fetch Coordinator
+
+```bash
+cd war-room
+cp fetch_agents/.env.example fetch_agents/.env
+# Edit fetch_agents/.env and set FETCH_AGENT_SEED to a private seed phrase.
+external_evidence_agent/.venv/bin/python fetch_agents/counterclaim_coordinator.py
+```
+
+Open the Agentverse Inspector URL printed in the terminal and connect/register
+the agent with Agentverse. The agent is intended to be discoverable from ASI:One
+through Agentverse and supports direct chat requests such as:
+
+```text
+Run the demo appeal case.
+```
+
+Payment Protocol is not required for this MVP and is not enabled.
+
 ## Setup (every teammate does this once)
 ```bash
 git clone https://github.com/harshildalall/war-room.git
