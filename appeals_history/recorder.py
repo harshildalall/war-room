@@ -13,8 +13,8 @@ import logging
 from datetime import datetime, UTC
 from typing import Any
 
-from appeal_history.db import get_collection
-from appeal_history.models import build_set_fields, build_outcome_subdoc
+from appeals_history.db import get_collection
+from appeals_history.models import build_set_fields, build_outcome_subdoc
 
 log = logging.getLogger(__name__)
 
