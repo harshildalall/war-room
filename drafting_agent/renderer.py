@@ -15,17 +15,21 @@ def render_docx(strategy: dict, drafted: dict, output_path: Path) -> None:
             body_rt.add("\n\n")
 
     context = {
-        "case_id":                  strategy["case_id"],
-        "date_today":               date.today().strftime("%B %d, %Y"),
-        "recommended_remedy":       strategy["recommended_remedy"],
-        "confidence_score":         f"{strategy['confidence_score']:.0%}",
-        "strongest_arguments":      strategy["strongest_arguments"],
-        "contract_violations":      strategy["contract_violations"],
-        "letter_body":              body_rt,
-        "citations_footnoted":      drafted["citations_footnoted"],
-        "exhibits_checklist":       drafted["exhibits_checklist"],
-        "submission_instructions":  drafted["submission_instructions"],
-        "deadline":                 drafted["deadline"],
+        "appeal_date": date.today().strftime("%B %d, %Y"),
+        "insurer_name": strategy.get("insurer", ""),
+        "insurer_address": strategy.get("insurer_address", ""),
+        "patient_name": strategy.get("patient_name", ""),
+        "patient_dob": strategy.get("patient_dob", ""),
+        "member_id": strategy.get("member_id", ""),
+        "claim_number": strategy.get("case_id", ""),
+        "date_of_service": strategy.get("date_of_service", ""),
+        "denial_reason_summary": strategy.get("denial_reason_text", ""),
+        "appeal_level": strategy.get("appeal_level", "first_internal"),
+        "medical_necessity_argument": drafted["appeal_letter"],
+        "personal_evidence": strategy.get("personal_evidence", []),
+        "external_evidence": drafted.get("citations_footnoted", []),
+        "missing_info_note": strategy.get("missing_info_note", ""),
+        "submitter_name": strategy.get("submitter_name", ""),
     }
 
     tpl.render(context)
