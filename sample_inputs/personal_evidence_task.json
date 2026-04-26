@@ -1,0 +1,16 @@
+{
+  "case_id": "597d9f32-68dd-4020-831f-a35f5a874d6a",
+  "schema_version": "1.0",
+  "status": "pending",
+  "denial_category": "medical_necessity",
+  "denied_procedures": ["97110"],
+  "diagnosis": ["S82.101A"],
+  "patient_narrative": "I need physical therapy for my broken leg",
+  "evidence_gaps": ["No treating physician statement", "No prior treatment attempts documented"],
+  "instructions": {
+    "extract_symptoms": true,
+    "extract_treatment_history": true,
+    "flag_gaps": true,
+    "priority_fields": ["treating_physician_statement", "prior_treatment_attempts"]
+  }
+}

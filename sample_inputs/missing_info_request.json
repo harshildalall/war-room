@@ -1,0 +1,11 @@
+{
+  "case_id": "597d9f32-68dd-4020-831f-a35f5a874d6a",
+  "schema_version": "1.0",
+  "status": "pending",
+  "missing_fields": [
+    {"field_name": "member_id", "importance": "critical"},
+    {"field_name": "treating_physician", "importance": "high"},
+    {"field_name": "denial_date", "importance": "high"}
+  ],
+  "can_proceed": true
+}

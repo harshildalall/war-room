@@ -1,0 +1,13 @@
+{
+  "case_id": "597d9f32-68dd-4020-831f-a35f5a874d6a",
+  "schema_version": "1.0",
+  "status": "pending",
+  "search_queries": [
+    "CPT 97110 therapeutic exercises medical necessity guidelines tibial fracture",
+    "physical therapy rehabilitation closed tibial fracture clinical guidelines",
+    "UnitedHealthcare physical therapy medical necessity criteria fracture rehabilitation"
+  ],
+  "preferred_sources": ["CMS NCD", "specialty society guidelines", "PubMed"],
+  "denial_category": "medical_necessity",
+  "insurer": "UnitedHealthcare"
+}

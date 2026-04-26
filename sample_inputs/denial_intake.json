@@ -1,0 +1,18 @@
+{
+  "case_id": "597d9f32-68dd-4020-831f-a35f5a874d6a",
+  "schema_version": "1.0",
+  "status": "parsed",
+  "insurer": "UnitedHealthcare",
+  "plan_id": null,
+  "member_id": null,
+  "denied_procedure_codes": ["97110"],
+  "diagnosis_codes": ["S82.101A"],
+  "denial_reason_text": "Not medically necessary",
+  "denial_reason_category": "medical_necessity",
+  "denial_date": null,
+  "appeal_deadline": "2026-05-30",
+  "appeal_level": "first_internal",
+  "treating_physician": null,
+  "service_dates": [],
+  "confidence_score": 0.72
+}
